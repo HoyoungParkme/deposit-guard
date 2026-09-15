@@ -1,30 +1,235 @@
 ---
 doc_id: JSD-DOM-002
 type: DOM
-title: 보증금지킴 — 클래스 명세 (DTO)
+title: 보증금지킴 — 클래스 명세
 status: draft
-upstream: [JSD-PRD-001, JSD-UC-001, JSD-DOM-001]
+upstream: [JSD-PRD-001, JSD-UC-001, JSD-DOM-001, JSD-INFRA-001]
 ---
 
 # 클래스 명세
 
 ## 0. 이 문서가 다루는 것
 
-도구 사이를 오가는 값 객체(DTO) 7개. Pydantic 모델로 `app/domain/dto.py` 한 곳에만 둔다. 테이블은 [[JSD-DOM-001]], 함수는 MS. **내부 타입 정의는 이 문서가 유일하다** — 다른 문서는 참조만 한다.
+폴더 구조, 엔티티(테이블에 대응하는 모델), 설계 클래스(서비스 10개), 의존 관계, DTO 7개. 테이블 정의는 [[JSD-DOM-001]], 함수 시그니처는 MS. **내부 타입(DTO) 정의는 이 문서 5절이 유일하다** — 다른 문서는 참조만 한다.
 
-## 1. 개념 식별
+## 1. 폴더 구조
 
-| 클래스 | 만드는 도구 | 쓰는 도구 |
+```
+app/
+  main.py                 FastAPI 앱, 라우터 등록, 정적 서빙
+  config.py               env 설정 (OPENAI_MODEL, UPSTAGE_KEY, DATA_GO_KR_KEY, DATABASE_URL, 한도 상수)
+  domain/
+    dto.py                DTO 7개 (5절)
+    rules_const.py        규칙표 상수: 경계·신호·필수 검토·가격 순서·최우선변제금·기준일·출처
+    todo_const.py         단계별 할 일 규칙표 (RFQ Q37)
+    clause_const.py       특약 템플릿 (표준 1~3 원문 + 4종)
+  review/                 세션·루프·이벤트  → ReviewService, AgentLoop
+  registry/               파싱·구조화       → RegistryService
+  rules/                  합산·신호·등급     → RulesService (순수)
+  lookup/                 시세·대장·명단     → LookupService
+  report/                 의견서·특약·공유   → ReportService, ShareService
+  gate/                   검사·캐시·한도     → GateService
+  infra/
+    db.py                 SQLAlchemy 세션, 모델 (2절)
+    openai_client.py      OpenAI 래퍼 (타임아웃·재시도·usage)
+    upstage_client.py     Document Parse 래퍼
+    datago_client.py      공공데이터포털 래퍼 (XML)
+    sse.py                이벤트 큐·SSE
+  api/
+    reviews.py  shares.py  samples.py  criteria.py  health.py
+web/                      React + TS + Vite (UI-1~5)
+assets/samples/           예시 등기부 PDF 3건
+tests/
+  rules/  registry/  review/  lookup/  report/  api/
+```
+
+도메인 폴더 안은 `service.py`(설계 클래스) + `repo.py`(DB 접근) + 필요 시 `adapter.py`(외부). 도메인끼리는 `service`만 부른다.
+
+## 2. 엔티티
+
+SQLAlchemy 모델. 컬럼은 [[JSD-DOM-001]]의 DD를 그대로 따른다.
+
+| 엔티티 | 테이블 | 소유 도메인 |
 |---|---|---|
-| Registry | 등기부 읽기 | 권리 합산, 신호 검사, 의견서 |
-| RightsSummary | 권리 합산 | 신호 검사, 등급, 의견서 |
-| Signal | 신호 검사 | 등급, 의견서 |
-| Grade | 등급 판정 | 의견서, 화면 |
-| Question | 사용자에게 묻기 | 화면, 에이전트 |
-| Report | 의견서 작성 | 화면, PDF, 공유 |
-| ReviewEvent | 에이전트 루프 | 화면(SSE), 의견서 검토 기록 |
+| ReviewSession | [[JSD-DOM-001#review_sessions]] | review |
+| ReviewDocument | [[JSD-DOM-001#review_documents]] | registry |
+| ReviewEventRow | [[JSD-DOM-001#review_events]] | review |
+| ReportRow | [[JSD-DOM-001#reports]] | report |
+| Share | [[JSD-DOM-001#shares]] | report |
+| FileCache | [[JSD-DOM-001#file_cache]] | gate |
+| LookupCache | [[JSD-DOM-001#lookup_cache]] | lookup |
+| HugDefaulter | [[JSD-DOM-001#hug_defaulters]] | lookup |
+| UsageLog | [[JSD-DOM-001#usage_log]] | gate |
 
-## 2. 개념 모델
+엔티티는 DB 경계 안에서만 쓰고, 도메인 사이에는 DTO(5절)로 넘긴다.
+
+## 3. 설계 클래스
+
+#### ReviewService 검토 세션
+
+```mermaid
+classDiagram
+    class ReviewService {
+        +create(upload|sample_id, deposit, type, name, ip) CreateResult
+        +get(session_id) SessionView
+        +stream_events(session_id, last_event_id) AsyncIterator
+        +answer(session_id, question_id, answer, file)
+        +override_values(session_id, price, entries) Report
+        +cancel(session_id)
+    }
+```
+
+책임: 세션 생명주기, 루프 시작·재개·중단, SSE 스트림(실시간·재생). 근거: [[JSD-UC-001#UC-A1]] [[JSD-UC-001#UC-A3]].
+
+#### AgentLoop 에이전트 루프
+
+```mermaid
+classDiagram
+    class AgentLoop {
+        +run(session_id, file_bytes)
+        +dispatch(session, tool, args) ToolResult
+        +emit(session_id, kind, text, tool, data) ReviewEvent
+        +ask(session, question) Any
+        +resume(session_id, answer)
+        +stop(session_id)
+    }
+```
+
+책임: 판단(LLM) → 도구 → 관찰 반복, 한도·순서 규칙, 이벤트 기록. 도구 실행은 다른 서비스에 위임. 근거: [[JSD-UC-001#UC-S9]].
+
+#### RegistryService 등기부
+
+```mermaid
+classDiagram
+    class RegistryService {
+        +read(session_id, file_bytes, kind_hint) Registry
+        +structure(sections) Registry
+        +get_html(session_id, kind) str
+    }
+```
+
+책임: 파싱(업스테이지) → 구간 분리 → 구조화(LLM) → 후처리(말소·부기·정규화) → 저장. 근거: [[JSD-UC-001#UC-S1]].
+
+#### RulesService 규칙 (순수)
+
+```mermaid
+classDiagram
+    class RulesService {
+        +summarize(registries, deposit, price, source, tenants, vacant, region) RightsSummary
+        +check(registries, rights, ctx) tuple~list~Signal~, Grade~
+        +criteria() dict
+    }
+```
+
+책임: 합산·신호·등급. **DB·LLM·네트워크 없음.** 상수는 `domain/rules_const.py`. 근거: [[JSD-PRD-001#R4]] [[JSD-PRD-001#R5]] [[JSD-PRD-001#R6]].
+
+#### LookupService 외부 조회
+
+```mermaid
+classDiagram
+    class LookupService {
+        +price(address, building_type, name, area) PriceResult
+        +building(address) BuildingResult
+        +defaulter(name) DefaulterResult
+        +refresh_defaulters()
+    }
+```
+
+책임: 캐시 → 외부 호출(타임아웃·재시도) → 캐시. 명단 스냅샷 갱신. 근거: [[JSD-UC-001#UC-S4]] [[JSD-UC-001#UC-S5]] [[JSD-UC-001#UC-S6]].
+
+#### ReportService 의견서
+
+```mermaid
+classDiagram
+    class ReportService {
+        +write(session, registry, rights, signals, grade, answers, log, notes, rebuild) Report
+        +verify_numbers(report, rights, grade) int
+        +get(session_id) Report
+        +render_pdf(session_id) bytes
+    }
+```
+
+책임: 할 일·특약 선택(규칙), 문장 생성(LLM), 후검증, 저장, PDF. 근거: [[JSD-UC-001#UC-S8]].
+
+#### ShareService 공유
+
+```mermaid
+classDiagram
+    class ShareService {
+        +create(session_id) ShareResult
+        +get(token) Report
+    }
+```
+
+책임: 마스킹, 토큰, 만료. 근거: [[JSD-UC-001#UC-A4]].
+
+#### GateService 게이트
+
+```mermaid
+classDiagram
+    class GateService {
+        +validate_file(upload) FileMeta
+        +cache_key(hash, deposit, type, name) str
+        +cache_lookup(key) UUID
+        +rate_check(ip, is_sample)
+        +record_usage(session_id, kind, units, cost)
+    }
+```
+
+책임: 검사·캐시·한도·비용. 근거: [[JSD-UC-001#UC-S10]].
+
+#### SampleService 예시
+
+```mermaid
+classDiagram
+    class SampleService {
+        +list() list
+        +bytes(sample_id) bytes
+        +warm_all()
+    }
+```
+
+책임: `assets/samples/` 목록·바이트·배포 후 워밍. 근거: [[JSD-UC-001#UC-A2]].
+
+#### HealthService 헬스
+
+```mermaid
+classDiagram
+    class HealthService {
+        +check() dict
+    }
+```
+
+책임: DB 연결, 최근 실패율. 근거: [[JSD-INFRA-001#C1]].
+
+## 4. 의존 관계
+
+```mermaid
+flowchart TD
+    API[api/*] --> RS[ReviewService]
+    API --> SH[ShareService]
+    API --> SM[SampleService]
+    API --> RU[RulesService]
+    RS --> GT[GateService]
+    RS --> AL[AgentLoop]
+    AL --> RG[RegistryService]
+    AL --> RU
+    AL --> LK[LookupService]
+    AL --> RP[ReportService]
+    RP --> RU
+    RG --> UP[(업스테이지)]
+    RG --> OA[(OpenAI)]
+    AL --> OA
+    RP --> OA
+    LK --> GO[(공공 API·HUG)]
+    RU -.의존 없음.-> RU
+```
+
+규칙: `rules`는 아무것도 import하지 않는다. `review`만 여러 도메인을 조립한다. `api`는 서비스만 부르고 도메인 내부(repo)를 모른다.
+
+## 5. DTO
+
+도구 사이를 오가는 값 객체. Pydantic 모델로 `app/domain/dto.py` 한 곳에만 둔다.
 
 ```mermaid
 classDiagram
@@ -39,8 +244,6 @@ classDiagram
     RightsSummary --> Report
     ReviewEvent --> Report : 검토 기록
 ```
-
-## 3. 개념별 정리
 
 #### Registry 등기부 구조
 
@@ -275,13 +478,13 @@ classDiagram
 
 판정 근거: [[JSD-PRD-001#R12]].
 
-## 4. 경계
+## 6. 경계
 
 - `rules`는 Registry·RightsSummary·Signal·Grade만 안다. Question의 answer는 `rules`에 들어가기 전에 `review`가 단순 값(bool·int·str)으로 풀어 넘긴다.
 - `report`는 Report를 만들 때 Grade·RightsSummary를 그대로 넣고, 후검증에서 그 값과 문장을 대조한다.
 - 화면은 DTO를 그대로 JSON으로 받는다. 클라이언트 재계산 금지.
 
-## 5. 미결사항
+## 7. 미결사항
 
 - [ ] `purpose_code` 목록 완전성 — 실제 등기부 샘플로 검증
 - [ ] `answer`가 파일일 때의 타입 (document id 문자열로 통일 예정)
