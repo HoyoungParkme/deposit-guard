@@ -35,6 +35,7 @@ erDiagram
     review_sessions ||--o{ review_documents : has
     review_sessions ||--o{ review_events : logs
     review_sessions ||--o| reports : produces
+    review_sessions |o--o{ review_sessions : cached_from
     reports ||--o{ shares : masked_copy
     review_sessions ||--o{ usage_log : costs
     file_cache }o--|| review_sessions : points_to
@@ -45,6 +46,7 @@ erDiagram
         text contract_type
         text counterparty_name
         text building_type
+        uuid cached_from FK
         timestamptz expires_at
     }
     review_documents {
@@ -103,11 +105,12 @@ stateDiagram-v2
 | is_sample | bool | ○ | 예시 파일 여부 (IP 한도 제외) |
 | file_hash | text | ○ | 업로드 파일 SHA-256 |
 | client_ip_hash | text | ○ | IP 해시 (한도 계산용, 원본 IP 저장 안 함) |
+| cached_from | uuid FK | | 캐시 적중으로 만들어진 세션이면 원 세션 ID. 문서·이벤트·의견서는 원 세션 것을 읽는다 ([[JSD-UC-001#UC-A2]] 4) |
 | tool_calls | int | ○ | 도구 호출 수 (한도 20) |
 | questions_asked | int | ○ | 질문 수 (한도 5) |
 | cost_krw | numeric | ○ | 누적 비용 |
 | created_at / updated_at | timestamptz | ○ | |
-| expires_at | timestamptz | ○ | 마지막 접근 + 24h. 지나면 문서 삭제 |
+| expires_at | timestamptz | ○ | 마지막 접근 + 24h. 지나면 문서 삭제. 예시 원 세션은 null(만료 없음) |
 
 판정 근거: 상태 전이는 [[JSD-UC-001#UC-S9]]. 한도는 [[JSD-PRD-001#R10]].
 
@@ -207,6 +210,7 @@ stateDiagram-v2
 | review_events | (session_id, seq) UNIQUE | SSE 재개·재생 순서 |
 | review_sessions | (client_ip_hash, created_at) | IP 일일 한도 집계 |
 | review_sessions | (expires_at) | 만료 정리 배치 |
+| review_sessions | (cached_from) | 원 세션 삭제 전 참조 확인 |
 | review_documents | (session_id) | 세션 삭제 시 함께 |
 | file_cache | (expires_at) | 만료 정리 |
 | lookup_cache | (expires_at) | 만료 정리 |
