@@ -3,14 +3,14 @@ doc_id: JSD-MS-001
 type: MS
 title: 보증금지킴 — 미니스펙
 status: draft
-upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
+upstream: [JSD-SEQ-001, JSD-API-001, JSD-API-002, JSD-DOM-002]
 ---
 
 # MINISPEC
 
 ## 0. 이 문서가 다루는 것
 
-서비스 함수 26개. DTO 타입은 [[JSD-DOM-002]]에만 정의돼 있고 여기서는 이름만 쓴다. 분기는 `if 조건 → 결과 · else → 결과`.
+서비스 함수 26개. DTO 타입은 [[JSD-DOM-002]]에만 정의돼 있고 여기서는 이름만 쓴다. 분기는 `if 조건 → 결과 · else → 결과`. REST는 [[JSD-API-001]], 에이전트 도구는 [[JSD-API-002]].
 
 ## 1. 함수 목록
 
@@ -220,7 +220,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 첫 호출 강제, 텍스트 응답 3회 → 강제 의견서, 20회 한도, 필수 항목 미시도 되돌림 1회, 병렬 tool_calls 처리, 파일 바이트 해제
 
-근거: [[JSD-SEQ-001#SEQ-1]] · [[JSD-UC-001#UC-S9]] · [[JSD-API-001]] 4.1
+근거: [[JSD-SEQ-001#SEQ-1]] · [[JSD-UC-001#UC-S9]] · [[JSD-API-002]] 4절
 
 #### AgentLoop.dispatch 도구 라우팅
 
@@ -254,7 +254,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 한도, 타임아웃, 정상 답변 반영
 
-근거: [[JSD-SEQ-001#SEQ-2]] · [[JSD-API-001#ask_user]]
+근거: [[JSD-SEQ-001#SEQ-2]] · [[JSD-API-002#ask_user]]
 
 ### 2.3 registry
 
@@ -277,7 +277,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 예시 3건 필수 필드 정답 일치, 등기부 아닌 PDF 거절, 토지 등기부(kind=land)
 
-근거: [[JSD-UC-001#UC-S1]] · [[JSD-API-001#read_registry]]
+근거: [[JSD-UC-001#UC-S1]] · [[JSD-API-002#read_registry]]
 
 #### RegistryService.structure 구조화
 
@@ -313,7 +313,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 말소 제외, 토지 합산, 다가구 가산, 가격 없음, 5건 이상 단위 테스트
 
-근거: [[JSD-PRD-001#R4]] · [[JSD-API-001#summarize_rights]]
+근거: [[JSD-PRD-001#R4]] · [[JSD-API-002#summarize_rights]]
 
 #### RulesService.check 신호·등급
 
@@ -341,7 +341,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 규칙 12개 각각 양·음성, 경계 70/90/54, 대리인 완화, 가격 없음 → 최소 주의
 
-근거: [[JSD-PRD-001#R5]] [[JSD-PRD-001#R6]] · [[JSD-API-001#check_signals]]
+근거: [[JSD-PRD-001#R5]] [[JSD-PRD-001#R6]] · [[JSD-API-002#check_signals]]
 
 #### RulesService.criteria 규칙표
 
@@ -366,7 +366,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** 캐시 히트, 코드 없음, 0건, XML 파싱 (녹화된 응답으로)
 
-근거: [[JSD-UC-001#UC-S4]] · [[JSD-API-001#lookup_price]]
+근거: [[JSD-UC-001#UC-S4]] · [[JSD-API-002#lookup_price]]
 
 #### LookupService.building 건축물대장
 
@@ -403,7 +403,7 @@ upstream: [JSD-SEQ-001, JSD-API-001, JSD-DOM-002]
 
 **테스트 관점** todos 선택 규칙(다가구·근저당·unknown), 특약 빈칸 채움, LLM 실패 폴백, 후검증 교정
 
-근거: [[JSD-UC-001#UC-S8]] · [[JSD-API-001#write_report]]
+근거: [[JSD-UC-001#UC-S8]] · [[JSD-API-002#write_report]]
 
 #### ReportService.verify_numbers 후검증
 
