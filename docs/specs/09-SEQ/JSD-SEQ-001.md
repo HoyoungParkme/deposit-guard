@@ -3,7 +3,7 @@ doc_id: JSD-SEQ-001
 type: SEQ
 title: 보증금지킴 — 시퀀스
 status: draft
-upstream: [JSD-UC-001, JSD-API-001, JSD-DOM-002]
+upstream: [JSD-UC-001, JSD-API-001, JSD-API-002, JSD-DOM-002]
 ---
 
 # SEQUENCE
@@ -21,7 +21,7 @@ upstream: [JSD-UC-001, JSD-API-001, JSD-DOM-002]
 | 게이트 | G | GateService (검사·캐시·한도) | 서비스 | [[JSD-UC-001#UC-S10]] |
 | 루프 | L | AgentLoop (백그라운드 태스크) | 서비스 | [[JSD-UC-001#UC-S9]] |
 | LLM | LLM | OpenAI GPT-5.6 Terra | 외부 | [[JSD-INFRA-001#C7]] |
-| 도구 | T | RegistryService·RulesService·LookupService·ReportService | 서비스 | [[JSD-API-001]] 4절 |
+| 도구 | T | RegistryService·RulesService·LookupService·ReportService | 서비스 | [[JSD-API-002]] |
 | 파싱 | UP | 업스테이지 Document Parse | 외부 | [[JSD-INFRA-001#C8]] |
 | 공공 API | GO | 실거래가·건축HUB | 외부 | [[JSD-RFQ-001#Q26]] |
 | DB | DB | Postgres | 저장소 | [[JSD-DOM-001]] |
@@ -205,11 +205,11 @@ sequenceDiagram
 
 ## 2. 되먹일 것
 
-| 발견 | 되먹일 문서 |
-|---|---|
-| 루프가 LLM 텍스트 응답을 받았을 때의 처리(되돌려 보내기)를 UC-S9 3a에 이미 뒀지만, 3회 반복 후 강제 `write_report`는 API 4.1에도 명시해야 함 | [[JSD-API-001]] 4.1 — 이미 있음 |
-| 캐시 세션의 `cached_from` 컬럼이 DD에 없음 | [[JSD-DOM-001#review_sessions]]에 `cached_from uuid` 추가 필요 |
-| `write_report(rebuild=true)` 인자가 도구 스키마에 없음 | [[JSD-API-001#write_report]]에 내부 전용 인자로 추가 (에이전트에는 노출 안 함) |
+| 발견 | 되먹일 문서 | 상태 |
+|---|---|---|
+| 텍스트 응답 3회 후 강제 `write_report` | [[JSD-API-002]] 4절 | 반영됨 |
+| 캐시 세션의 `cached_from` 컬럼이 DD에 없음 | [[JSD-DOM-001#review_sessions]]에 `cached_from uuid` 추가 필요 | **미반영** |
+| `write_report(rebuild=true)` 내부 전용 인자 | [[JSD-API-002#write_report]] | 반영됨 (에이전트 비노출) |
 
 ## 3. 미결사항
 
