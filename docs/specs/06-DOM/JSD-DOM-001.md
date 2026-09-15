@@ -1,34 +1,34 @@
 ---
 doc_id: JSD-DOM-001
 type: DOM
-title: 보증금지킴 — 도메인 모델·ERD·DTO
+title: 보증금지킴 — ERD·DD
 status: draft
 upstream: [JSD-PRD-001, JSD-UC-001, JSD-INFRA-001]
 ---
 
-# 도메인 모델 / ERD·DD
+# ERD·DD
 
 ## 0. 이 문서가 다루는 것
 
-Postgres 테이블 9개(소문자 ID)와 도구 사이를 오가는 DTO 7개(대문자 ID). 도메인 6개의 경계. 함수 시그니처는 MS, 도구 스키마는 API.
+Postgres 테이블 9개의 ERD, 데이터 사전(DD), 인덱스. 도구 사이를 오가는 DTO는 [[JSD-DOM-002]], 함수는 MS.
 
-**3줄 요약.** 검토 세션 하나가 문서·이벤트·의견서를 가진다. 등기부는 `Registry` DTO로 구조화돼 규칙 도구를 통과하며 `RightsSummary`·`Signal`·`Grade`가 된다. 규칙 도메인은 DB와 LLM을 모른다.
+**3줄 요약.** 검토 세션 하나가 문서·이벤트·의견서를 가진다. 원본 파일은 어디에도 없고, 파싱 결과는 세션 만료까지만 산다. 캐시·스냅샷·비용 집계는 세션과 느슨하게 연결된 보조 테이블이다.
 
 ## 1. 개념 식별
 
-| 개념 | 종류 | 어디서 왔나 |
+| 개념 | 테이블 | 어디서 왔나 |
 |---|---|---|
-| 검토 세션 | 테이블 | [[JSD-UC-001#UC-A1]] |
-| 등기부 문서(파싱 결과) | 테이블 + DTO `Registry` | [[JSD-UC-001#UC-S1]] |
-| 검토 이벤트(진행 기록) | 테이블 + DTO `ReviewEvent` | [[JSD-PRD-001#R12]] |
-| 질문·답변 | 테이블(이벤트의 한 종류) + DTO `Question` | [[JSD-UC-001#UC-S7]] |
-| 권리 합산 | DTO `RightsSummary` | [[JSD-UC-001#UC-S2]] |
-| 위험 신호·등급 | DTO `Signal`, `Grade` | [[JSD-UC-001#UC-S3]] |
-| 의견서 | 테이블 + DTO `Report` | [[JSD-UC-001#UC-S8]] |
-| 공유본 | 테이블 | [[JSD-UC-001#UC-A4]] |
-| 파일 캐시·조회 캐시·명단 스냅샷·비용 집계 | 테이블 | [[JSD-INFRA-001#C3]] [[JSD-UC-001#UC-S10]] |
+| 검토 세션 | review_sessions | [[JSD-UC-001#UC-A1]] |
+| 등기부 문서(파싱 결과) | review_documents | [[JSD-UC-001#UC-S1]] |
+| 검토 이벤트(진행 기록·질문·답변) | review_events | [[JSD-PRD-001#R12]] [[JSD-UC-001#UC-S7]] |
+| 의견서 | reports | [[JSD-UC-001#UC-S8]] |
+| 공유본 | shares | [[JSD-UC-001#UC-A4]] |
+| 파일 캐시 | file_cache | [[JSD-UC-001#UC-S10]] |
+| 외부 조회 캐시 | lookup_cache | [[JSD-PRD-001#R7]] |
+| HUG 명단 스냅샷 | hug_defaulters | [[JSD-UC-001#UC-S6]] |
+| 비용 집계 | usage_log | [[JSD-INFRA-001#C3]] |
 
-## 2. 개념 모델
+## 2. ERD
 
 ```mermaid
 erDiagram
@@ -77,9 +77,18 @@ erDiagram
 
 `lookup_cache`, `hug_defaulters`, `usage_log`, `file_cache`는 세션과 느슨하게 연결되므로 그림에서 뺐다.
 
-## 3. 개념별 정리
+```mermaid
+stateDiagram-v2
+    [*] --> created
+    created --> running : 루프 시작
+    running --> waiting_user : 질문
+    waiting_user --> running : 답변 / 5분 무응답
+    running --> done : 의견서 저장
+    running --> failed : 등기부 아님 / 파싱 실패 / 취소
+    done --> expired : 24h
+```
 
-### 3.1 테이블
+## 3. DD
 
 #### review_sessions 검토 세션
 
@@ -102,17 +111,6 @@ erDiagram
 
 판정 근거: 상태 전이는 [[JSD-UC-001#UC-S9]]. 한도는 [[JSD-PRD-001#R10]].
 
-```mermaid
-stateDiagram-v2
-    [*] --> created
-    created --> running : 루프 시작
-    running --> waiting_user : 질문
-    waiting_user --> running : 답변 / 5분 무응답
-    running --> done : 의견서 저장
-    running --> failed : 등기부 아님 / 파싱 실패
-    done --> expired : 24h
-```
-
 #### review_documents 등기부 문서
 
 | 컬럼 | 타입 | 필수 | 설명 |
@@ -121,7 +119,7 @@ stateDiagram-v2
 | session_id | uuid FK | ○ | |
 | doc_kind | text | ○ | `building` / `land` / `collective`(집합건물) |
 | parsed_html | text | ○ | Document Parse가 돌려준 HTML (블록 ID 포함). 하이라이트 원문 |
-| registry | jsonb | ○ | `Registry` DTO 직렬화 |
+| registry | jsonb | ○ | `Registry` DTO 직렬화 ([[JSD-DOM-002#Registry]]) |
 | page_count | int | ○ | 비용 집계용 |
 | created_at | timestamptz | ○ | |
 
@@ -135,7 +133,7 @@ stateDiagram-v2
 | session_id | uuid FK | ○ | |
 | seq | int | ○ | 세션 내 순번. SSE 재접속 시 `Last-Event-ID` |
 | kind | text | ○ | `thought` / `tool_call` / `tool_result` / `question` / `answer` / `report` / `error` |
-| payload | jsonb | ○ | `ReviewEvent` DTO |
+| payload | jsonb | ○ | `ReviewEvent` DTO ([[JSD-DOM-002#ReviewEvent]]). 질문이면 `Question` 포함 |
 | created_at | timestamptz | ○ | |
 
 캐시 재생([[JSD-UC-001#UC-A2]] 4)은 이 테이블을 순서대로 읽는다. payload에 이름·주민번호 금지.
@@ -146,7 +144,7 @@ stateDiagram-v2
 |---|---|---|---|
 | session_id | uuid PK FK | ○ | 세션당 1개 |
 | grade | text | ○ | `safe` / `caution` / `danger` |
-| body | jsonb | ○ | `Report` DTO |
+| body | jsonb | ○ | `Report` DTO ([[JSD-DOM-002#Report]]) |
 | corrections | int | ○ | 후검증 교정 문장 수 |
 | llm_fallback | bool | ○ | LLM 실패로 템플릿 대체 여부 |
 | created_at | timestamptz | ○ | |
@@ -202,155 +200,35 @@ stateDiagram-v2
 | cost_krw | numeric | ○ | 환산 비용 |
 | created_at | timestamptz | ○ | |
 
-### 3.2 DTO (도구 사이를 오가는 값)
+## 4. 인덱스
 
-DTO는 `rules` 도메인이 DB·LLM 없이 동작하게 하는 계약이다. Pydantic 모델로 한 곳(`domain/dto.py`)에만 정의한다.
-
-#### Registry 등기부 구조
-
-```mermaid
-classDiagram
-    class Registry {
-        doc_kind: str
-        building: BuildingInfo
-        gap: list~RegistryEntry~
-        eul: list~RegistryEntry~
-        warnings: list~str~
-    }
-    class BuildingInfo {
-        address: str
-        building_type: str
-        is_collective: bool
-        land_right_unregistered: bool
-        separate_land_registry: bool
-    }
-    class RegistryEntry {
-        entry_id: str
-        section: str
-        rank_no: str
-        purpose: str
-        received_at: date
-        cause: str
-        price_manwon: int
-        holder: str
-        holder_is_corporation: bool
-        amount_manwon: int
-        cancelled: bool
-        parent_rank_no: str
-        block_id: str
-    }
-    Registry --> BuildingInfo
-    Registry --> RegistryEntry
-```
-
-- `section`: `gap` / `eul`. `purpose`: 등기목적 원문 + 정규화 토큰(`ownership_transfer`, `mortgage`, `lease_right`, `seizure`, `trust`, `cancellation` …)
-- `amount_manwon`: 채권최고액·전세금·임차보증금. `price_manwon`: 갑구 거래가액
-- `parent_rank_no`: 부기등기(1-1)의 주등기. `cancelled`: 말소 여부
-- `block_id`: `parsed_html`의 블록 ID → 근거 하이라이트
-
-판정 근거: [[JSD-PRD-001#R3]].
-
-#### RightsSummary 권리 합산
-
-| 필드 | 타입 | 설명 |
+| 테이블 | 인덱스 | 이유 |
 |---|---|---|
-| senior_mortgage_manwon | int | 말소 제외 근저당 채권최고액 합 (건물+토지) |
-| senior_lease_manwon | int | 전세권 전세금 합 |
-| other_tenants_manwon | int | 다가구 기존 세입자 보증금 (답변) + 빈 방 × 최우선변제금 |
-| senior_total_manwon | int | 위 셋의 합 |
-| deposit_manwon | int | 내 보증금 |
-| price_manwon | int or null | 주택 가격 |
-| price_source | str or null | `trade_api` / `registry_sale` / `user_input` |
-| debt_ratio | float or null | (senior_total + deposit) ÷ price |
-| senior_ratio | float or null | senior_total ÷ price |
-| multi_household_unknown | bool | 다가구인데 세입자 답변 없음 |
-| based_on | list[str] | 계산에 쓴 entry_id |
+| review_events | (session_id, seq) UNIQUE | SSE 재개·재생 순서 |
+| review_sessions | (client_ip_hash, created_at) | IP 일일 한도 집계 |
+| review_sessions | (expires_at) | 만료 정리 배치 |
+| review_documents | (session_id) | 세션 삭제 시 함께 |
+| file_cache | (expires_at) | 만료 정리 |
+| lookup_cache | (expires_at) | 만료 정리 |
+| shares | (expires_at) | 만료 정리 |
+| hug_defaulters | (name) | 완전 일치 대조 |
+| usage_log | (session_id), (created_at) | 건당 비용·일별 합계 |
 
-판정 근거: [[JSD-PRD-001#R4]].
+## 5. 경계
 
-#### Signal 위험 신호
+| 도메인 | 소유 테이블 |
+|---|---|
+| `review` | review_sessions, review_events |
+| `registry` | review_documents |
+| `rules` | — (테이블 없음, 순수) |
+| `lookup` | lookup_cache, hug_defaulters |
+| `report` | reports, shares |
+| `gate` | file_cache, usage_log |
 
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| code | str | `encumbrance` / `trust` / `lease_registration` / `owner_mismatch` / `defaulter_match` / `illegal_building` / `land_right_issue` / `recent_mortgage` / `frequent_transfer` / `corporate_owner` / `senior_excess` / `multi_household_unknown` |
-| severity | str | `danger`(즉시 위험) / `caution`(주의) |
-| evidence_ids | list[str] | 근거 entry_id 또는 답변 ID. 비어 있으면 안 됨 |
-| source | str | 공식 기준 출처 (LH 공고, HUG 상품개요 등) |
-| summary | str | 규칙이 만든 한 줄 (LLM 아님) |
+한 테이블은 한 도메인만 쓴다. 다른 도메인이 필요하면 소유 도메인의 서비스를 통해서만.
 
-판정 근거: [[JSD-PRD-001#R5]].
+## 6. 미결사항
 
-#### Grade 등급
-
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| level | str | `safe` / `caution` / `danger` |
-| deciders | list[str] | 등급을 결정한 신호 code 또는 `debt_ratio` |
-| unknowns | list[str] | 확인 못 한 항목 code |
-| rule_version | str | 규칙표 버전 (문서 R6 기준일) |
-
-판정 근거: [[JSD-PRD-001#R6]].
-
-#### Question 질문
-
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| question_id | str | |
-| kind | str | `illegal_building` / `price` / `tenants` / `proxy` / `owner_type` / `land_registry` / `other` |
-| text | str | 질문 문장 |
-| why | str | 왜 묻는지 한 줄 |
-| options | list[str] or null | 선택지 (없으면 입력형) |
-| help_url | str or null | 확인 방법 링크 |
-| answer | Any or null | 답. `unknown`이면 건너뜀 |
-
-판정 근거: [[JSD-PRD-001#R8]].
-
-#### Report 의견서
-
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| grade | Grade | |
-| conclusion | str | 한 문장 (LLM, 후검증) |
-| checked | list[CheckedItem] | 항목·결과(`ok`/`unknown`/`n_a`)·근거 |
-| signals | list[SignalView] | Signal + 쉬운 설명(LLM) |
-| rights | RightsSummary | |
-| todos | list[Todo] | 단계(`before`/`signing`/`balance`/`after`)·항목·방법·비용·이유 |
-| clauses | list[Clause] | 특약 제목·본문(빈칸 채움)·출처 |
-| questions_to_ask | list[str] | 집주인·중개사 질문 |
-| notices | list[str] | AI 고지·전문가 확인·기준 출처 |
-| review_log | list[ReviewEvent] | 검토 기록 |
-
-판정 근거: [[JSD-PRD-001#R9]].
-
-#### ReviewEvent 검토 이벤트
-
-| 필드 | 타입 | 설명 |
-|---|---|---|
-| seq | int | |
-| kind | str | `thought` / `tool_call` / `tool_result` / `question` / `answer` / `report` / `error` |
-| text | str | 사람이 읽는 한 줄 ("을구를 봅니다: 근저당 1건 1억 2천") |
-| tool | str or null | 도구 이름 |
-| data | dict or null | 도구 입출력 요약 (개인정보 제외) |
-| at | datetime | |
-
-판정 근거: [[JSD-PRD-001#R12]].
-
-## 4. 경계
-
-| 도메인 | 소유 테이블 | 소유 DTO | 의존 |
-|---|---|---|---|
-| `review` | review_sessions, review_events | ReviewEvent, Question(대기·재개) | registry·rules·lookup·report 호출, OpenAI |
-| `registry` | review_documents | Registry | 업스테이지, OpenAI(구조화) |
-| `rules` | — | RightsSummary, Signal, Grade | **없음** (순수) |
-| `lookup` | lookup_cache, hug_defaulters | — | 공공 API, HUG 페이지 |
-| `report` | reports, shares | Report | OpenAI(문장), rules(후검증에 Grade·RightsSummary 재사용) |
-| `gate` | file_cache, usage_log | — | — |
-
-규칙: `rules`는 어떤 도메인도 import하지 않는다. `review`만 여러 도메인을 조립한다.
-
-## 5. 미결사항
-
-- [ ] `purpose` 정규화 토큰 목록의 완전성 — 실제 등기부 샘플로 검증 후 확정
 - [ ] `block_id`가 Document Parse 출력에서 어떤 형태인지 (element id vs 좌표) — INFRA 미결과 동일
-- [ ] 최우선변제금 지역 판정에 필요한 주소 → 지역 구분 매핑 (과밀억제권역 목록)
 - [ ] `usage_log` 환율 상수 관리 방식
+- [ ] 세션 삭제를 하드 삭제로 할지, 문서만 지우고 세션 행은 남길지 (비용 집계 유지 위해 후자 예정)
