@@ -14,36 +14,40 @@ upstream: [JSD-PRD-001, JSD-UC-001, JSD-DOM-001, JSD-INFRA-001]
 
 ## 1. 폴더 구조
 
+fastapi-domain-architecture 규칙을 따른다. 도메인 폴더마다 `router.py`(HTTP 입출력) · `schemas.py`(요청/응답 Pydantic) · `service.py`(비즈니스 로직·트랜잭션) · `crud.py`(DB 접근) · `models.py`(ORM). 호출은 router → service → crud 한 방향. 외부 연동 래퍼는 `infra/`.
+
 ```
 app/
-  main.py                 FastAPI 앱, 라우터 등록, 정적 서빙
-  config.py               env 설정 (OPENAI_MODEL, UPSTAGE_KEY, DATA_GO_KR_KEY, DATABASE_URL, 한도 상수)
+  main.py                 FastAPI 앱, 라우터 등록, web/dist 정적 서빙
+  config.py               env 설정(OPENAI_MODEL, UPSTAGE_API_KEY, DATA_GO_KR_KEY, DATABASE_URL) + 한도·단가 상수
   domain/
-    dto.py                DTO 7개 (5절)
+    dto.py                DTO 7개 (5절) — 유일한 정의처
     rules_const.py        규칙표 상수: 경계·신호·필수 검토·가격 순서·최우선변제금·기준일·출처
     todo_const.py         단계별 할 일 규칙표 (RFQ Q37)
     clause_const.py       특약 템플릿 (표준 1~3 원문 + 4종)
-  review/                 세션·루프·이벤트  → ReviewService, AgentLoop
-  registry/               파싱·구조화       → RegistryService
-  rules/                  합산·신호·등급     → RulesService (순수)
-  lookup/                 시세·대장·명단     → LookupService
-  report/                 의견서·특약·공유   → ReportService, ShareService
-  gate/                   검사·캐시·한도     → GateService
+  domains/
+    review/   router·schemas·service·crud·models   세션·루프·이벤트 → ReviewService, AgentLoop(service 안)
+    registry/ service·crud·models                   파싱·구조화 → RegistryService
+    rules/    service                               합산·신호·등급 → RulesService (순수, models 없음)
+    lookup/   service·crud·models                   시세·대장·명단 → LookupService
+    report/   router·schemas·service·crud·models   의견서·특약·공유 → ReportService, ShareService
+    gate/     service·crud·models                   검사·캐시·한도·비용 → GateService
+    health/   router·service                        헬스체크 → HealthService
   infra/
-    db.py                 SQLAlchemy 세션, 모델 (2절)
-    openai_client.py      OpenAI 래퍼 (타임아웃·재시도·usage)
-    upstage_client.py     Document Parse 래퍼
-    datago_client.py      공공데이터포털 래퍼 (XML)
-    sse.py                이벤트 큐·SSE
-  api/
-    reviews.py  shares.py  samples.py  criteria.py  health.py
-web/                      React + TS + Vite (UI-1~5)
+    db.py                 async 엔진·세션·Base
+    models_all.py         Alembic용 모델 일괄 import (다른 코드는 쓰지 않음)
+    logging.py            JSON 로그 + PII 필터(scrub_pii)
+    openai_client.py      OpenAI 래퍼 (타임아웃·재시도·토큰→원화)
+    upstage_client.py     Document Parse 래퍼 (html + elements[id,page,coordinates])
+    datago_client.py      공공데이터포털 래퍼 (XML/JSON)
+    sse.py                이벤트 큐·SSE (B3)
+migrations/               Alembic (versions/4d02cbc915e3 초기 9테이블)
+web/                      React 18 + TS + Vite + Tailwind (UI-1~5). 빌드 산출물 web/dist
 assets/samples/           예시 등기부 PDF 3건
-tests/
-  rules/  registry/  review/  lookup/  report/  api/
+tests/                    pytest (rules·registry·review·lookup·report·api)
+docker-compose.yml        app + db(postgres:16). dev 호스트 포트 55432
+Dockerfile                node 빌드 → python 3.12 + uv
 ```
-
-도메인 폴더 안은 `service.py`(설계 클래스) + `repo.py`(DB 접근) + 필요 시 `adapter.py`(외부). 도메인끼리는 `service`만 부른다.
 
 ## 2. 엔티티
 
@@ -53,7 +57,7 @@ SQLAlchemy 모델. 컬럼은 [[JSD-DOM-001]]의 DD를 그대로 따른다.
 |---|---|---|
 | ReviewSession | [[JSD-DOM-001#review_sessions]] | review |
 | ReviewDocument | [[JSD-DOM-001#review_documents]] | registry |
-| ReviewEventRow | [[JSD-DOM-001#review_events]] | review |
+| ReviewEvent(ORM) | [[JSD-DOM-001#review_events]] | review |
 | ReportRow | [[JSD-DOM-001#reports]] | report |
 | Share | [[JSD-DOM-001#shares]] | report |
 | FileCache | [[JSD-DOM-001#file_cache]] | gate |
@@ -206,7 +210,7 @@ classDiagram
 
 ```mermaid
 flowchart TD
-    API[api/*] --> RS[ReviewService]
+    API[domains/*/router.py] --> RS[ReviewService]
     API --> SH[ShareService]
     API --> SM[SampleService]
     API --> RU[RulesService]
@@ -225,7 +229,7 @@ flowchart TD
     RU -.의존 없음.-> RU
 ```
 
-규칙: `rules`는 아무것도 import하지 않는다. `review`만 여러 도메인을 조립한다. `api`는 서비스만 부르고 도메인 내부(repo)를 모른다.
+규칙: `rules`는 아무것도 import하지 않는다(DTO 제외). `review`만 여러 도메인을 조립한다. `router`는 `service`만 부르고 `crud`를 모른다.
 
 ## 5. DTO
 
@@ -293,7 +297,7 @@ classDiagram
 | price_manwon | 갑구 거래가액 (만원). 없으면 null |
 | cancelled | 말소 여부. 합산·신호에서 제외 |
 | parent_rank_no | 부기등기(1-1)의 주등기 순위. 감액 변경은 주등기 금액을 덮어씀 |
-| block_id | 파싱 HTML의 블록 ID. 근거 하이라이트 앵커. **비어 있으면 안 됨** |
+| block_id | 파싱 HTML의 요소 `id` 속성 (업스테이지 elements[].id). 근거 하이라이트 앵커. **비어 있으면 안 됨** |
 | warnings | 추출 실패 필드, 판정 못 한 건물 종류 등 |
 
 판정 근거: [[JSD-PRD-001#R3]] [[JSD-UC-001#UC-S1]].
