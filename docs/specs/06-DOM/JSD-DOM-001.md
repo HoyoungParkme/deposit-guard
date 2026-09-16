@@ -52,52 +52,214 @@ upstream: [JSD-RFQ-001, JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-INFRA-001]
 
 ## 2. 개념 모델
 
+개념이 스물다섯이라 관계도를 두 장으로 나눈다. 앞장은 서류에서 금액까지, 뒷장은 판정에서 산출까지다. 두 장을 잇는 것은 [[#Review]]다. 검토 하나가 앞장의 [[#PlannedLease]]·[[#RegistryExtract]]·[[#RightsSummary]]를 입력으로 받아 뒷장의 [[#Grade]]와 [[#Opinion]]을 낸다.
+
+### 2.1 관계도 — 서류와 금액
+
 ```mermaid
 classDiagram
     direction LR
-    class Review
-    class PlannedLease
-    class Property
-    class Counterparty
-    class RegistryExtract
-    class RegistryEntry
-    class Owner
-    class SeniorClaim
-    class OtherTenants
-    class PriceEstimate
-    class RightsSummary
-    class RiskSignal
-    class Grade
-    class UnknownItem
-    class Question
-    class Opinion
-    class Todo
-    class SpecialClause
-    class SharedOpinion
+    class PlannedLease {
+        보증금 만원
+        계약형태 전세 또는 반전세월세
+        상대방이름 선택입력
+    }
+    class Property {
+        종류 아파트 다세대연립 다가구단독 오피스텔 기타
+        등기구분 집합건물 일반건물 토지
+        지번주소
+        지역구분 서울 과밀억제권역 광역시 그밖
+        대지권미등기 여부
+        토지별도등기 여부
+    }
+    class RegistryExtract {
+        종류 건물 토지 집합건물
+        발급시점
+        원문위치 보존
+    }
+    class RegistryEntry {
+        구 갑구 을구
+        순위번호 부기가지번호
+        등기목적
+        접수일
+        등기원인
+        금액 채권최고액 보증금 거래가액
+        권리자 개인 법인
+        말소여부
+        원문위치
+    }
+    class Owner {
+        이름 또는 법인명
+        성격 개인 법인
+        취득시점
+        취득원인 매매 보존 상속
+    }
+    class Counterparty {
+        이름
+        소유자일치 여부
+        대리관계 본인 위임장있음 위임장없음 모름
+        명단일치 여부
+    }
+    class SeniorClaim {
+        종류 근저당 전세권 임차권 기존보증금
+        금액 만원
+        근거등기항목
+        권리자
+    }
+    class OtherTenants {
+        가구수
+        아는보증금합계 만원
+        빈방수
+        확인수단 확정일자부여현황 전입세대확인서
+    }
+    class PriceEstimate {
+        금액 만원
+        출처 실거래가 등기부거래가액 직접입력
+        근거기간과 건수
+    }
+    class RightsSummary {
+        근저당합계 만원
+        전세권임차권합계 만원
+        다가구가산액 만원
+        선순위합계 만원
+        보증금 만원
+        부채비율
+        선순위비율
+        다가구미확인 여부
+        합산에쓴 등기항목목록
+    }
 
-    Review "1" --> "1" PlannedLease : 검토 대상
     PlannedLease "1" --> "1" Property : 목적물
     PlannedLease "1" --> "0..1" Counterparty : 상대방
-    Review "1" --> "1..2" RegistryExtract : 건물 · 토지
     RegistryExtract "1" --> "1" Property : 표제부에서 읽음
-    RegistryExtract "1" --> "*" RegistryEntry : 갑구 · 을구
+    RegistryExtract "1" --> "*" RegistryEntry : 갑구 을구
     RegistryEntry "*" --> "0..1" Owner : 소유권 항목
-    RegistryEntry "*" --> "0..1" SeniorClaim : 담보 · 임차 항목
-    Review "1" --> "*" Question : 모르면 묻는다
-    Review "1" --> "1" RightsSummary
+    RegistryEntry "*" --> "0..1" SeniorClaim : 담보 임차 항목
+    Owner "1" ..> "0..1" Counterparty : 대조
     RightsSummary "1" --> "*" SeniorClaim : 합산
     RightsSummary "1" --> "0..1" OtherTenants : 다가구 가산
     RightsSummary "1" --> "0..1" PriceEstimate : 비율의 분모
+    RightsSummary "1" --> "1" PlannedLease : 보증금
+```
+
+### 2.2 관계도 — 판정과 산출
+
+```mermaid
+classDiagram
+    direction LR
+    class Review {
+        상태 접수됨 검토중 답변대기 완료 중단 만료
+        고른 검토항목과 결과
+        질문수와 도구호출수
+        보관기한
+    }
+    class ChecklistItem {
+        단계 계약전 계약당일 잔금일 입주후
+        판정방식 등기부 외부조회 질문 안내
+        건물종류별 필수여부
+        결과 확인함 확인못함 해당없음
+    }
+    class RiskSignal {
+        코드와 제목
+        심각도 즉시위험 주의
+        근거 등기항목 또는 답변
+        출처와 기준일
+        쉬운말 설명
+    }
+    class Grade {
+        등급 안전 주의 위험
+        결정근거 신호목록
+        확인못한 항목목록
+        규칙버전과 기준일
+    }
+    class UnknownItem {
+        검토항목
+        사유 조회실패 무응답 자료없음
+        직접확인 방법
+    }
+    class OfficialCriterion {
+        출처기관과 문서명
+        기준일과 규칙버전
+        정하는것 경계값 신호 문구 절차
+    }
+    class ReviewRecord {
+        종류 판단 도구호출 결과 질문 답변 완료 오류
+        사람이읽는 문장
+        순서
+    }
+    class Question {
+        종류 위반건축물 시세 세입자 대리인 임대인유형 토지등기부
+        왜묻는지
+        입력형식 선택 숫자 글 파일
+        확인방법 안내
+        답변 또는 무응답
+    }
+    class Opinion {
+        등급과 결론문장
+        확인한것 목록
+        위험신호와 설명
+        합산숫자
+        고지 AI생성 전문가확인 보관기한
+    }
+    class Todo {
+        단계 계약전 계약당일 잔금일 입주후
+        할일 한줄
+        어디서 어떻게
+        비용
+        왜 연결된신호
+    }
+    class SpecialClause {
+        제목과 본문
+        빈칸 금액 날짜 은행명
+        출처와 기준일
+        함께내는 질문
+    }
+    class SharedOpinion {
+        마스킹 이름 주민번호 상세주소
+        원문과 기록 없음
+        만료기한
+    }
+    class SampleCase {
+        가상등기부와 기본조건
+        기대등급 안전 주의 위험
+        실제처리 재생아님
+    }
+    class BuildingLedger {
+        주용도
+        대장구분 일반 집합
+        가구수와 세대수
+        사용승인일
+        위반건축물 제공안됨
+    }
+    class DefaulterRecord {
+        공개항목 성명 나이 주소 채무
+        스냅샷 기준일
+        완전일치 대조
+        동명이인 가능
+    }
+
+    Review "1" --> "*" ChecklistItem : 고른다
+    Review "1" --> "*" Question : 모르면 묻는다
+    Review "1" --> "*" ReviewRecord : 남긴다
     Review "1" --> "*" RiskSignal
-    RiskSignal "*" --> "1..*" RegistryEntry : 근거
     Review "1" --> "1" Grade
+    Review "1" --> "1" Opinion
+    Review "0..1" --> "0..1" SampleCase : 예시로 시작
+    ChecklistItem "*" --> "0..1" UnknownItem : 못한 항목
+    Question "*" ..> "*" RiskSignal : 답변이 입력
+    RiskSignal "*" --> "1" OfficialCriterion : 출처
     Grade "1" --> "*" RiskSignal : 결정 근거
     Grade "1" --> "*" UnknownItem : 보수적 판정 사유
-    Review "1" --> "1" Opinion
     Opinion "1" --> "*" Todo
     Opinion "1" --> "*" SpecialClause
     Opinion "1" --> "0..1" SharedOpinion : 마스킹 복제
+    Opinion "1" --> "*" ReviewRecord : 검토 기록
+    UnknownItem "*" ..> "*" Todo : 맨 위로
+    BuildingLedger "0..1" ..> "*" RiskSignal : 근거
+    DefaulterRecord "0..1" ..> "*" RiskSignal : 근거
 ```
+
+### 2.3 판정 흐름
 
 판정은 한 방향으로만 흐른다. 등기부에서 항목을 읽고, 항목을 합산하고, 합산과 답변으로 신호를 정하고, 신호로 등급을 정하고, 등급으로 안내를 고른다.
 
@@ -113,17 +275,28 @@ flowchart LR
     U --> O
 ```
 
-검토 하나의 생애. 사람이 답을 주지 않아도 끝까지 간다 ([[JSD-PRD-001#R8]]).
+### 2.4 검토의 생애
+
+사람이 답을 주지 않아도 끝까지 간다 ([[JSD-PRD-001#R8]]).
 
 ```mermaid
 stateDiagram-v2
-    [*] --> 접수됨 : 등기부와 보증금을 받음
-    접수됨 --> 검토중 : 에이전트가 읽기 시작
-    검토중 --> 답변대기 : 모르는 것을 물음
-    답변대기 --> 검토중 : 답변 또는 무응답
-    검토중 --> 완료 : 의견서 냄
-    검토중 --> 중단 : 등기부가 아님 · 취소
-    완료 --> 만료 : 보관 기간 지남
+    state "접수됨" as received
+    state "검토중" as reviewing
+    state "답변대기" as waiting
+    state "완료" as done
+    state "중단" as aborted
+    state "만료" as expired
+
+    [*] --> received : 등기부와 보증금을 받음
+    received --> reviewing : 에이전트가 읽기 시작
+    reviewing --> waiting : 모르는 것을 물음
+    waiting --> reviewing : 답변 또는 무응답
+    reviewing --> done : 의견서를 냄
+    reviewing --> aborted : 등기부가 아님 또는 취소
+    done --> expired : 보관 기간 지남
+    aborted --> [*]
+    expired --> [*]
 ```
 
 ## 3. 개념별 정리
@@ -496,7 +669,7 @@ stateDiagram-v2
 | 보수적으로 판정 | 확인 못 한 것이 있으면 등급을 낮추지 않는다 (안전으로 올리지 않는다) | [[JSD-PRD-001#R6]] |
 | 채권최고액을 쓴다 | 근저당은 실제 잔액이 아니라 등기부의 채권최고액으로 합산한다 | [[JSD-PRD-001#R4]] |
 | 말소는 빼고 이력은 읽는다 | 말소된 항목은 합산에서 제외하되 이력으로는 판단에 쓴다 | [[JSD-PRD-001#R4]] |
-| 금액 단위는 만원 | 모든 금액은 만원 단위 정수. 화면 표기만 억·만원으로 바꾼다 | [[JSD-DOM-001#RightsSummary]] |
+| 금액 단위는 만원 | 모든 금액은 만원 단위 정수. 화면 표기만 억·만원으로 바꾼다 | [[#RightsSummary]] |
 | 원본은 남기지 않는다 | 올린 파일은 보관하지 않고, 읽어낸 결과도 보관 기간이 지나면 사라진다 | [[JSD-PRD-001#N1]] |
 | 개인정보는 기록에 없다 | 검토 기록과 공유본에 이름·주민번호·상세 주소를 담지 않는다 | [[JSD-PRD-001#N1]] |
 | 출처를 밝힌다 | 판정과 안내는 공식 기준을 가리킨다 | [[JSD-RFQ-001#Q38]] |
