@@ -356,7 +356,7 @@ Error:
 
 ## 4. 스키마
 
-#### message 메시지
+### 4.1 메시지
 
 대화의 한 칸. 말풍선도 카드도 모두 이것이다.
 
@@ -385,7 +385,7 @@ Message:
 | `notice` | system | `{ code }` | 안내 띠 (답변 없이 진행, 한도 도달 등) |
 | `error` | system | `Error` | 오류 줄 |
 
-#### citation 인용
+### 4.2 인용
 
 ```yaml
 Citation:
@@ -400,7 +400,7 @@ Citation:
 
 화면은 `{{c1}}`을 칩으로 바꾸고, 누르면 `block_ids`의 첫 블록으로 이동해 강조한다. 여러 개면 패널 머리에서 순회한다 ([[JSD-UI-001#UI-2]]).
 
-#### question 질문
+### 4.3 질문
 
 ```yaml
 Question:
@@ -416,7 +416,7 @@ Question:
     asked_no:    { type: integer, description: 몇 번째 질문인지 }
 ```
 
-#### report 의견서
+### 4.4 의견서
 
 ```yaml
 Report:
@@ -435,7 +435,7 @@ Report:
     llm_fallback:{ type: boolean }
 ```
 
-#### rights_summary 권리 합산
+### 4.5 권리 합산
 
 ```yaml
 RightsSummary:
