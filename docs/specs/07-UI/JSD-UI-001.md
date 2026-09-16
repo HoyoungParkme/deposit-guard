@@ -16,11 +16,11 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 
 **웹 서비스다.** 앱은 만들지 않는다. 앱으로 제출해도 대회 규정상 웹 데모 링크가 따로 필요하고 스토어 심사 기간이 없다.
 
-**데스크톱을 먼저 확정한다.** 이 문서의 배치는 데스크톱 1240px 기준이다. 폰 배치는 대화형 전환으로 다시 그려야 하므로 5절 미결로 둔다.
+**데스크톱을 먼저 확정한다.** 이 문서의 배치는 데스크톱 1240px 기준이다. 폰 배치는 대화형 전환으로 다시 그려야 하므로 6절 미결로 둔다.
 
 ### 0.1 형식
 
-와이어프레임. 화면마다 배치(HTML 뼈대)·요소 표·규칙·시나리오 네 절을 둔다. 시안은 흑백으로 그리고 색·서체는 4절 토큰으로 따로 정한다.
+와이어프레임. 화면마다 배치(뼈대)·요소 표·규칙·시나리오 네 절을 둔다. 뼈대는 `div`와 클래스 이름으로만 적고 `data-el` 번호가 요소 표와 이어진다. 시안은 흑백으로 그리고 색·서체는 4절 토큰으로 따로 정한다.
 
 ## 1. 유스케이스 대응
 
@@ -42,9 +42,9 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 
 | 폭 | 이름 | 배치 |
 |---|---|---|
-| ≥ 1240px | 데스크톱 (확정) | 화면별 2~3열. 대화 + 문서 패널 452 |
+| 1240px 이상 | 데스크톱 (확정) | 화면별 2~3열. 대화 + 문서 패널 452 |
 | 1024~1239px | 좁은 데스크톱 | 문서 패널을 380까지 줄인다. 그 아래로는 접는다 |
-| < 1024px | 태블릿·폰 | 미결. 문서 패널을 시트로 내릴지 탭으로 바꿀지 정하지 않았다 |
+| 1024px 미만 | 태블릿·폰 | 미결. 문서 패널을 시트로 내릴지 탭으로 바꿀지 정하지 않았다 |
 
 ### 2.3 웹 제출 요건에서 온 규칙
 
@@ -64,20 +64,20 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 #### 배치
 
 ```html
-<header data-el="1">보증금지킴 · 판정 기준</header>
-<main class="center-column">
-  <p data-el="2b">LH 전세임대 권리분석 기준 그대로</p>
-  <h1 data-el="2">이 집, 계약해도 될까요?</h1>
-  <p data-el="2c">한 문장 설명</p>
-  <form data-el="3">
-    <div>드롭존 (비었을 때 점선)</div>
-    <div>보증금 · 계약 형태 · 임대인 이름 펼침 · 보내기</div>
-  </form>
-  <p data-el="3b">파일과 보증금을 넣으면 검토가 시작됩니다 · 로그인 없음</p>
-  <section data-el="4">예시 등기부 카드 3개 (가로 3열)</section>
-  <p data-el="5">미저장 고지</p>
-</main>
-<footer data-el="6">AI 고지 · 판정 기준 출처</footer>
+<div class="topbar" data-el="1">보증금지킴 · 판정 기준</div>
+<div class="center-column">
+  <div class="kicker" data-el="2b">LH 전세임대 권리분석 기준 그대로</div>
+  <div class="title" data-el="2">이 집, 계약해도 될까요?</div>
+  <div class="sub" data-el="2c">확인할 것을 스스로 정해 검토하고 의견서를 냅니다</div>
+  <div class="composer" data-el="3">
+    <div class="drop">드롭존 (비었을 때 점선)</div>
+    <div class="row">보증금 · 계약 형태 · 임대인 이름 펼침 · 보내기</div>
+  </div>
+  <div class="hint" data-el="3b">파일과 보증금을 넣으면 검토가 시작됩니다 · 로그인 없음</div>
+  <div class="samples" data-el="4">예시 등기부 카드 3개 (가로 3열)</div>
+  <div class="privacy" data-el="5">미저장 고지</div>
+</div>
+<div class="footer" data-el="6">AI 고지 · 판정 기준 출처</div>
 ```
 
 #### 요소
@@ -121,25 +121,25 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 #### 배치
 
 ```html
-<header data-el="1">보증금지킴 · 검토 대상 요약 · 도구/질문/경과 · 판정 기준 · 새 검토</header>
+<div class="topbar" data-el="1">검토 대상 요약 · 도구/질문/경과 · 판정 기준 · 새 검토</div>
 <div class="two-column">
-  <section class="left">
-    <ol data-el="2">
-      <li data-el="2a">에이전트 말풍선 (문장 + 인용 칩)</li>
-      <li data-el="2b">도구 카드 (단독 또는 가로 3개)</li>
-      <li data-el="3">질문 카드</li>
-      <li data-el="2c">사용자 말풍선</li>
-      <li data-el="4">숫자 요약 네 칸</li>
-      <li data-el="5">의견서 카드</li>
-    </ol>
-    <div data-el="6">추천 질문 칩 · 첨부 · 입력란 · 보내기 · 범위 고지</div>
-  </section>
-  <aside data-el="7" class="right">
-    <nav>탭: 등기부(건물) · 토지 등기부 · 의견서</nav>
-    <div>인용 위치 · 인용 n/N 이동 · 닫기</div>
-    <div>원문 표 (강조된 줄)</div>
-    <div>이 줄이 쓰인 곳</div>
-  </aside>
+  <div class="thread-col">
+    <div class="thread" data-el="2">
+      <div class="msg-agent" data-el="2a">에이전트 말풍선 (문장 + 인용 칩)</div>
+      <div class="msg-tool" data-el="2b">도구 카드 (단독 또는 가로 3개)</div>
+      <div class="msg-question" data-el="3">질문 카드</div>
+      <div class="msg-user" data-el="2c">사용자 말풍선</div>
+      <div class="msg-numbers" data-el="4">숫자 요약 네 칸</div>
+      <div class="msg-report" data-el="5">의견서 카드</div>
+    </div>
+    <div class="composer" data-el="6">추천 질문 칩 · 첨부 · 입력란 · 보내기 · 범위 고지</div>
+  </div>
+  <div class="doc-panel" data-el="7">
+    <div class="tabs">등기부(건물) · 토지 등기부 · 의견서</div>
+    <div class="panel-head">인용 위치 · 인용 n/N 이동 · 닫기</div>
+    <div class="sheet">원문 표 (강조된 줄)</div>
+    <div class="usages">이 줄이 쓰인 곳</div>
+  </div>
 </div>
 ```
 
@@ -151,7 +151,7 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 | 2 | 대화 타래 | 목록 | 말풍선이 아래로 쌓인다. 자동 스크롤 | — |
 | 2a | 에이전트 말풍선 | 항목 | 판단과 관찰을 사람이 읽는 문장으로. 사실 문장에는 인용 칩이 붙는다 | — |
 | 2b | 도구 카드 | 카드 | 도구 이름, 상태(완료·실패·소요 시간), 결과 요약 두세 줄. 병렬 호출은 가로 3개 | 펼치면 원본 값 |
-| 2c | 사용자 말풍선 | 항목 | 답변 또는 되묻기. 왼쪽 표식으로 구분 | — |
+| 2c | 사용자 말풍선 | 항목 | 답변 또는 되묻기. 표식으로 구분 | — |
 | 2d | 인용 칩 | 칩 | `을구 2번`처럼 등기부 위치. 선택된 칩은 반전 | 7이 그 줄로 이동·강조 |
 | 3 | 질문 카드 | 카드 | "질문 n / 최대 5", 질문, 왜 묻는지, 선택지·숫자·글·파일 입력, 확인 방법 링크 | 답변 → 2c로 남음 |
 | 4 | 숫자 요약 | 카드 | 부채비율·선순위·보증금·주택 가격. 합산 직후 한 번 | — |
@@ -193,22 +193,25 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 
 의견서는 두 곳에 산다. **패널 탭**은 대화를 떠나지 않고 접어서 보는 것이고, **단독 페이지**는 공유·인쇄·재방문용으로 펼쳐서 보는 것이다. 같은 의견서다.
 
-#### 배치 (단독 페이지)
+#### 배치
+
+단독 페이지 기준. 패널 탭은 같은 절을 접어서 담는다.
 
 ```html
-<header data-el="1">검토 대상 요약 · 대화로 돌아가기 · PDF 저장 · 링크 공유 · 판정 기준</header>
+<div class="topbar" data-el="1">검토 대상 요약 · 대화로 돌아가기 · PDF 저장 · 링크 공유 · 판정 기준</div>
 <div class="three-column">
-  <nav data-el="2">목차: 판정 · 숫자 · 신호 · 확인한 것 · 할 일 · 특약 · 물어볼 것 | 검토 과정: 대화 전체 · 도구 호출</nav>
-  <main>
-    <section data-el="3">등급 배지 · 결론(인용 포함) · 규칙 버전 · 후검증 교정 수 · 확인 못 함 띠</section>
-    <section data-el="4">숫자 네 칸 (부채비율 눈금 70·90)</section>
-    <section data-el="5">위험 신호 카드 (제목 · 설명 · 출처 · 근거 인용)</section>
-    <section data-el="6">확인한 것 표 (항목 · 근거 인용 · 결과)</section>
-    <section data-el="7">단계별 할 일 탭 + 체크리스트</section>
-    <section data-el="8">특약 · 물어볼 것 (복사)</section>
-    <p data-el="9">인쇄 안내</p>
-  </main>
-  <aside data-el="10">근거 패널: 강조된 줄 · 인용 n/N · 이 줄이 쓰인 곳</aside>
+  <div class="rail" data-el="2">목차: 판정 · 숫자 · 신호 · 확인한 것 · 할 일 · 특약 · 물어볼 것 | 검토 과정: 대화 전체 · 도구 호출</div>
+  <div class="report-body">
+    <div class="verdict" data-el="3">등급 배지 · 결론(인용 포함) · 규칙 버전 · 후검증 교정 수</div>
+    <div class="unknown-band" data-el="11">확인 못 한 항목 N개 띠</div>
+    <div class="numbers" data-el="4">숫자 네 칸 (부채비율 눈금 70·90)</div>
+    <div class="signals" data-el="5">위험 신호 카드 (제목 · 설명 · 출처 · 근거 인용)</div>
+    <div class="checked" data-el="6">확인한 것 표 (항목 · 근거 인용 · 결과)</div>
+    <div class="todos" data-el="7">단계별 할 일 탭 + 체크리스트</div>
+    <div class="clauses" data-el="8">특약 · 물어볼 것 (복사)</div>
+    <div class="print-note" data-el="9">인쇄 안내</div>
+  </div>
+  <div class="evidence-panel" data-el="10">강조된 줄 · 인용 n/N · 이 줄이 쓰인 곳</div>
 </div>
 ```
 
@@ -218,7 +221,7 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 |---|---|---|---|---|
 | 1 | 상단 바 | 고정 | 검토 대상 요약, 대화로 돌아가기, PDF 저장, 링크 공유, 판정 기준 | 각 동작 |
 | 2 | 목차 레일 | 내비 | 절 이름 + 개수. 아래에 검토 과정(대화 전체·도구 호출 수) | 절 이동 / [[#UI-2]] |
-| 3 | 판정 | 배지 + 문장 | 등급을 기호·글자로 함께. 결론 문장과 인용. 규칙 버전, 후검증 교정 수. 확인 못 한 항목이 있으면 바로 아래 띠 | 인용 → 10 |
+| 3 | 판정 | 배지 + 문장 | 등급을 기호·글자로 함께. 결론 문장과 인용. 규칙 버전, 후검증 교정 수 | 인용 → 10 |
 | 4 | 숫자 네 칸 | 카드 | 부채비율(70·90 눈금), 선순위 합계, 보증금, 주택 가격과 출처 | 가격 직접 입력 → 재판정 |
 | 5 | 위험 신호 | 카드 | 제목(쉬운 말), 설명, 공식 출처, 근거 인용. 즉시 위험은 굵은 띠 | 인용 → 10 |
 | 6 | 확인한 것 | 표 | 항목 · 근거 인용 · 결과(확인함·대체·확인 못 함·해당 없음) | 인용 → 10 |
@@ -226,7 +229,8 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 | 8 | 특약·물어볼 것 | 블록 | 제목·본문(채운 값 굵게)·출처·복사. 질문 3~5개와 모두 복사 | 복사 → 알림 |
 | 9 | 인쇄 안내 | 텍스트 | 인쇄에서 목차·근거 패널·대화가 빠진다는 것 | — |
 | 10 | 근거 패널 | 사이드 | 인용된 줄 강조, 인용 n/N 이동, "이 줄이 쓰인 곳" | 이동·닫기 |
-| 11 | 패널 탭 | 탭 | [[#UI-2]] 안에서 같은 의견서를 접어서 보여준다. 머리에 확대·인쇄·닫기 | 확대 → 단독 페이지 |
+| 11 | 확인 못 함 띠 | 알림 | 확인 못 한 항목 수. 할 일 맨 위로 이어진다 | 할 일로 이동 |
+| 12 | 패널 탭 | 탭 | [[#UI-2]] 안에서 같은 의견서를 접어서 보여준다. 머리에 확대·인쇄·닫기 | 확대 → 단독 페이지 |
 
 #### 규칙
 
@@ -259,19 +263,19 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 #### 배치
 
 ```html
-<header data-el="1">보증금지킴 · 의견서로 돌아가기 · 내 등기부 검토하기</header>
+<div class="topbar" data-el="1">보증금지킴 · 의견서로 돌아가기 · 내 등기부 검토하기</div>
 <div class="two-column">
-  <nav data-el="2">목차 (절 이름 + 개수)</nav>
-  <article>
-    <section data-el="3">머리말 + 규칙 버전·기준일 배지</section>
-    <section data-el="4">등급 규칙표</section>
-    <section data-el="5">즉시 위험 6 · 주의 6 신호표</section>
-    <section data-el="6">부채비율 계산식과 경계</section>
-    <section data-el="7">건물 종류별 필수 검토 · 주택 가격 산정 순서</section>
-    <section data-el="8">최우선변제금 · 검토 항목 21개</section>
-    <section data-el="9">검토 한도</section>
-    <section data-el="10">출처</section>
-  </article>
+  <div class="rail" data-el="2">목차 (절 이름 + 개수)</div>
+  <div class="criteria-body">
+    <div class="intro" data-el="3">머리말 + 규칙 버전·기준일 배지</div>
+    <div class="grades" data-el="4">등급 규칙표</div>
+    <div class="signals" data-el="5">즉시 위험 6 · 주의 6 신호표</div>
+    <div class="ratio" data-el="6">부채비율 계산식과 경계</div>
+    <div class="required" data-el="7">건물 종류별 필수 검토 · 주택 가격 산정 순서</div>
+    <div class="checklist" data-el="8">최우선변제금 · 검토 항목 21개</div>
+    <div class="limits" data-el="9">검토 한도</div>
+    <div class="sources" data-el="10">출처</div>
+  </div>
 </div>
 ```
 
@@ -311,17 +315,17 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 #### 배치
 
 ```html
-<header data-el="1">보증금지킴 · 내 등기부도 검토하기</header>
-<main class="single-column">
-  <div data-el="2">공유 띠: 무엇이 빠졌는지 · 남은 기간</div>
-  <section data-el="3">등급 · 결론 · 지역(동까지)·건물 종류·보증금·검토일</section>
-  <section data-el="4">숫자 네 칸</section>
-  <section data-el="5">위험 신호 (근거 자리는 회색)</section>
-  <section data-el="6">확인한 것 표</section>
-  <section data-el="7">단계별 할 일 (체크 없음)</section>
-  <section data-el="8">전환 카드: 내 등기부 검토하기</section>
-</main>
-<footer data-el="9">무엇이 빠졌는지 · AI 고지 · 판정 기준</footer>
+<div class="topbar" data-el="1">보증금지킴 · 내 등기부도 검토하기</div>
+<div class="single-column">
+  <div class="share-band" data-el="2">공유본이라는 것 · 빠진 것 · 남은 기간</div>
+  <div class="verdict" data-el="3">등급 · 결론 · 지역(동까지)·건물 종류·보증금·검토일</div>
+  <div class="numbers" data-el="4">숫자 네 칸</div>
+  <div class="signals" data-el="5">위험 신호 (근거 자리는 회색)</div>
+  <div class="checked" data-el="6">확인한 것 표</div>
+  <div class="todos" data-el="7">단계별 할 일 (체크 없음)</div>
+  <div class="cta" data-el="8">내 등기부 검토하기</div>
+</div>
+<div class="footer" data-el="9">무엇이 빠졌는지 · AI 고지 · 판정 기준</div>
 ```
 
 #### 요소
@@ -331,7 +335,10 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 | 1 | 상단 바 | 고정 | 서비스명과 "내 등기부도 검토하기" 하나뿐 | [[#UI-1]] |
 | 2 | 공유 띠 | 알림 | 공유본이라는 사실, 빠진 것, 남은 기간 | — |
 | 3 | 판정 | 배지 + 문장 | 등급·결론·규칙 버전. 아래 줄에 지역(동까지)·건물 종류·보증금·검토일 | — |
-| 4~7 | 본문 | [[#UI-3]]과 같은 부품 | 숫자·신호·확인한 것·할 일. 체크와 근거 보기는 없다 | 탭 전환만 |
+| 4 | 숫자 네 칸 | 카드 | [[#UI-3]]과 같은 값 | — |
+| 5 | 위험 신호 | 카드 | 제목·설명·출처. 근거 자리는 회색 "근거 보기 없음" | — |
+| 6 | 확인한 것 | 표 | 항목과 결과. 인용 없음 | — |
+| 7 | 단계별 할 일 | 탭 + 목록 | 단계별 항목. 체크박스 없음 | 탭 전환만 |
 | 8 | 전환 카드 | 카드 | 본 사람이 자기 등기부로 넘어가는 자리 | [[#UI-1]] |
 | 9 | 푸터 | 텍스트 | 원문·대화·이름·상세 주소가 없다는 것, AI 고지 | [[#UI-4]] |
 | 10 | 만료 화면 | 화면 | 이유 한 줄과 새 검토 버튼만. 의견서 내용은 보이지 않는다 | [[#UI-1]] |
@@ -365,7 +372,7 @@ upstream: [JSD-PRD-001, JSD-SCN-001, JSD-UC-001, JSD-DOM-001]
 
 ### 4.1 색과 서체
 
-와이어프레임은 흑백으로 그린다. 구현 색은 아래 토큰을 쓰되 시각 시안은 5절 미결로 남긴다.
+와이어프레임은 흑백으로 그린다. 구현 색은 아래 토큰을 쓰되 시각 시안은 6절 미결로 남긴다.
 
 | 토큰 | 값 | 용도 |
 |---|---|---|
@@ -409,7 +416,6 @@ flowchart LR
     U2 --> U4
     U3 --> U4
     U5 --> U4
-    U3 -->|보관 기간 내 재방문| U3
 ```
 
 ## 6. 미결사항
