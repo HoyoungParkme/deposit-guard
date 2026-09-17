@@ -384,7 +384,7 @@ Message:
 | `question` | agent | `Question` | 질문 카드 |
 | `answer` | user | `{ question_id, choice, text, document_id }` | 사용자 말풍선 |
 | `numbers` | agent | `RightsSummary` | 숫자 네 칸 |
-| `report` | agent | `{ grade, signal_count, unknown_count, rule_version }` | 의견서 카드 |
+| `report` | agent | `{ grade, signal_count, unknown_count, rule_version, revision_no, revision_reason }` | 의견서 카드. 판이 올라가면 이전 카드는 흐려진다 |
 | `notice` | system | `{ code }` | 안내 띠 (답변 없이 진행, 한도 도달 등) |
 | `error` | system | `Error` | 오류 줄 |
 
@@ -436,6 +436,8 @@ Report:
     notices:     [string]
     corrections: { type: integer, description: 후검증에서 바꾼 문장 수 }
     llm_fallback:{ type: boolean }
+    revision_no: { type: integer, description: 판. 첫 판은 1이고 다시 쓸 때마다 1 오른다 }
+    revision_reason: { type: string, nullable: true, description: 다시 쓴 이유. 이름을 가린 한 줄. 첫 판은 null }
 ```
 
 ### 4.5 권리 합산
