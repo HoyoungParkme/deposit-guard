@@ -70,9 +70,9 @@ flowchart LR
     subgraph App["app 컨테이너 (FastAPI)"]
         S[정적 파일<br/>React 빌드]
         API[/api: 세션·질문·의견서·공유/]
-        SSE[/events: SSE 진행 스트림/]
+        SSE[/api/reviews/id/stream: SSE 진행 스트림/]
         AG[에이전트 루프]
-        TL[도구 8종]
+        TL[도구 9종]
     end
     subgraph DB["db 컨테이너"]
         PG[(PostgreSQL)]
@@ -110,7 +110,7 @@ flowchart LR
 | 원문 하이라이트 | Document Parse가 돌려준 HTML을 그대로 렌더링하고 블록 ID로 강조 | PDF 뷰어 없이 좌표 없이 동작 | pdf.js + 좌표 | 5일 안에 좌표 매핑 위험 |
 | 실시간 | SSE (sse-starlette). 이벤트는 DB에도 저장해 재접속에 사용 | 단방향으로 충분 | WebSocket | 불필요 |
 | LLM | OpenAI GPT-5.6 Terra, 공식 Python SDK, 도구 호출 + JSON 스키마 구조화 출력 | 의뢰인 결정 | Luna 혼합 | 모델 하나로 단순화 (의뢰인) |
-| 에이전트 루프 | 직접 구현 (판단 → 도구 → 관찰) | 도구 8개, 규칙 명확, 프레임워크 불필요 | LangChain/LangGraph | 과설계, 디버깅 비용 |
+| 에이전트 루프 | 직접 구현 (판단 → 도구 → 관찰) | 도구 9개, 규칙 명확, 프레임워크 불필요 | LangChain/LangGraph | 과설계, 디버깅 비용 |
 | 문서 파싱 | 업스테이지 Document Parse (HTML 출력, 페이지·블록 좌표) | C8 | 자체 OCR | 표 구조 처리 불가 |
 | 외부 데이터 | 공공데이터포털 실거래가 8종, 건축HUB, 행안부 법정동코드, HUG 명단 스냅샷 | [[JSD-RFQ-001#Q26]] | — | — |
 | 캐시 | Postgres 테이블 (파일 해시 키, 외부 조회 키) | 컨테이너 추가 없이 | Redis | 단일 서비스에 과함 |
@@ -130,7 +130,7 @@ flowchart LR
 | `registry` | 등기부 파싱·구조화 (Document Parse + HTML 표에서 결정적으로 읽기, 모델 없음) | [[JSD-UC-001#UC-S1]] |
 | `rules` | 권리 합산, 위험 신호, 등급 판정 — 순수 함수, 외부 의존 없음 | [[JSD-UC-001#UC-S2]] [[JSD-UC-001#UC-S3]] |
 | `lookup` | 시세·건축물대장·명단 조회, 캐시, 스냅샷 | [[JSD-UC-001#UC-S4]] [[JSD-UC-001#UC-S5]] [[JSD-UC-001#UC-S6]] |
-| `report` | 의견서 조립, 단계별 할 일·특약 선택, LLM 문장 생성, 후검증, PDF | [[JSD-UC-001#UC-S8]] [[JSD-UC-001#UC-A4]] |
+| `report` | 의견서 조립, 단계별 할 일·특약 선택, LLM 문장 생성, 후검증. PDF는 브라우저 인쇄라 서버가 만들지 않는다 | [[JSD-UC-001#UC-S8]] [[JSD-UC-001#UC-A4]] |
 | `gate` | 파일 검사, 해시 캐시, IP 한도 | [[JSD-UC-001#UC-S10]] |
 
 `rules`는 LLM·네트워크를 절대 부르지 않는다. 테스트가 가장 많이 붙는 곳이다.
@@ -182,7 +182,7 @@ DB 볼륨은 compose named volume. 백업은 하루 1회 `pg_dump`를 Azure Blob
 | 헬스체크 | 1분 | `/health`: DB 연결, 최근 에이전트 실패율. 외부 uptime 모니터가 호출 |
 | HUG 명단 스냅샷 | 일 1회 | 페이지 읽기 → 테이블 갱신 |
 | 만료 정리 | 시간 1회 | 검토에 딸린 것(대화·질문·되묻기·등기부·인용·의견서) 24h, 파싱 캐시 24h(예시 제외), 공유본 7d, 조회 캐시 24h 삭제 |
-| 예시 파일 워밍 | 배포 직후 1회 | 예시 3건을 파싱해 파싱 캐시 채움 (검토는 만들지 않음) |
+| 예시 파일 워밍 | 배포 직후 1회 (배포 절차의 필수 단계) | 예시 3건을 파싱해 파싱 캐시 채움 (검토는 만들지 않음). 빠지면 예시 파일을 직접 올린 요청이 IP 한도에 세어진다 |
 | 백업 | 일 1회 | `pg_dump` → Azure Blob. 보관 기한이 있는 테이블은 데이터를 뺀다 (6장) |
 | 비용 점검 | 일 1회 | `usage_log` 합계, 건당 평균이 300원 넘으면 알림 |
 
