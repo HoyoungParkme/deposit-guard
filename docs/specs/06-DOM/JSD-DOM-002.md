@@ -43,7 +43,7 @@ upstream: [JSD-DOM-001, JSD-API-001, JSD-API-002, JSD-UI-001, JSD-INFRA-001]
 
 **기본형과 다른 점, 그리고 왜.** 싱크독 작성 규약(SYNC-STD-001) 1.9의 기본형을 따른다. 입구가 브라우저 REST 하나이고 배포 단위가 하나라([[JSD-INFRA-001#C6]]) 라우터는 도메인 폴더 안에 둔다. 다른 점은 다섯이다.
 - **빠진 파일.** `rules`에는 `crud`·`models`가 없다 — 판정 개념은 값이고 남기는 것은 부른 쪽이다([[JSD-DOM-001]] 5.2). `sample`에도 없다 — 예시 3건은 저장소에 커밋한 파일이다([[JSD-INFRA-001]] 3장 예시 파일). `lookup`·`gate`에는 `router`가 없다 — [[JSD-API-001]]의 16개 경로 중 이 둘이 받는 것이 없다. `gate`는 `schemas`도 없다 — 주고받는 타입이 `shared/types.py`의 것뿐이다
-- **더한 파일.** `review/service_agent.py`·`registry/service_parse.py`는 서비스가 길어 기능 단위로 나눈 것이고 계층 이름을 유지한다. `rules/criteria.py`·`report/catalog.py`는 로직 없는 상수다 — 판정 기준 페이지는 코드 상수를 그대로 내려보내야 하고([[JSD-UI-001#UI-4]] 규칙) 할 일·특약 문구는 출처와 함께 한곳에 있어야 고친다
+- **더한 파일.** `review/service_agent.py`·`registry/service_parse.py`는 서비스가 길어 기능 단위로 나눈 것이고 계층 이름을 유지한다. `rules/criteria.py`·`report/catalog.py`·`review/prompts.py`는 로직 없는 상수다 — 판정 기준 페이지는 코드 상수를 그대로 내려보내야 하고([[JSD-UI-001#UI-4]] 규칙) 할 일·특약 문구는 출처와 함께 한곳에 있어야 고치고, 프롬프트는 루프 코드와 따로 읽고 고친다
 - **`app/jobs.py`.** 배치 명령의 입구다([[JSD-INFRA-001]] 8장). 두 번째 입구지만 서비스 메서드를 부르기만 하고 REST와 따로 쓰는 절차가 없으므로 라우터를 도메인 밖으로 내지 않는다
 - **`core/health.py`.** `HealthService`는 도메인 모델의 코드 도메인 표에 없고 앱 자신의 DB 연결만 본다. 도메인 폴더를 새로 만들지 않고 `core`에 둔다
 - **`shared/types.py`.** 두 도메인 이상이 쓰는 열거형과, 개념이 아니면서 여러 도메인을 오가는 타입(`Upload` `Error` `Limits` `FileCheck` `ParsedDocument`)만 둔다. 개념의 DTO는 그 개념이 사는 도메인의 `schemas.py`에 있다 — 개념 하나는 도메인 하나에만 산다([[JSD-DOM-001]] 5.1). 파일 자리는 2.8 표의 `자리` 열이다
@@ -114,6 +114,7 @@ domains/
 │   ├── schemas.py           요청·응답 모델과 에이전트 도구 9종의 인자 모델 (API-002 3장)
 │   ├── service.py           ReviewService. 검토의 상태·한도·대화 기록·세션 정보 채우기. 트랜잭션 경계
 │   ├── service_agent.py     에이전트 루프. 도구 호출을 각 도메인 서비스로 나눠 보내고 모델에 가는 값을 가린다
+│   ├── prompts.py           시스템 프롬프트 두 벌(검토 · 되묻기)과 첫 차례 문장 틀. 로직 없는 상수
 │   ├── crud.py              DB 접근만
 │   ├── models.py            Review · ReviewRecord · Question · FollowUpTurn · UsageLog
 │   ├── ports.py             AgentModel — 모델 한 차례
@@ -675,6 +676,7 @@ classDiagram
 | `SampleCase` | `sample_id: str` · `title: str` · `summary: str` · `region: str` · `deposit_manwon: int` · `contract_type: ContractType` + 내부 `file_name: str` · `expected_grade: GradeLevel` | SampleService.list · file | sample |
 | `Health` | `status: str` · `db: str` · `version: str?` | HealthService.check | core |
 | `ToolResult` | `ok: bool` · `data: dict?` · `error: str?` · `summary: str` | 루프 dispatch → 모델 · tool 메시지 | review |
+| `LoopState` | `review_id: str` · `phase: Phase` · `turn_id: int?` · `model: AgentModel` · `history: list[dict]` · `strikes: int` · `required_returned: bool` · `read_ok: bool` · `forced: bool` | 루프 메모리. 저장하지 않는다 | review |
 | `Registry` | `document_id: str` · `doc_kind: DocKind` · `building: Property` · `gap: list[RegistryEntry]` · `eul: list[RegistryEntry]` · `warnings: list[str]` | RegistryService.read → 루프가 `owner_matches_counterparty`를 더하고 가린 뒤 모델 | registry |
 | `Property` | `region: str` · `building_type: BuildingType` · `is_collective: bool` · `land_right_unregistered: bool` · `separate_land_registry: bool` + 내부 `lot_address: str?` · `exclusive_area_m2: float?` · `building_name: str?` | Registry.building · LookupService 인자 · SignalInput · ReportInput | registry |
 | `RegistryEntry` (DTO) | `entry_id: str` · `rank_no: str` · `purpose_code: PurposeCode` · `received_at: date?` · `amount_manwon: int?` · `price_manwon: int?` · `holder: str?` · `holder_is_corporation: bool?` · `cancelled: bool` + 내부 `section: Section` · `parent_entry_id: str?` · `cause: str?` · `cancelled_by_entry_id: str?` | Registry · ReportInput. `rules`에는 `EntryFact`로 옮긴다. ORM은 `RegistryEntryRow` | registry |
@@ -1006,7 +1008,7 @@ classDiagram
 
 ### 4.2 review.service_agent — 에이전트 루프
 
-`review` 안이지만 클래스가 아니라 함수 열이다. 루프가 여기 사는 이유는 [[JSD-DOM-001]] 5.2, 시간축은 [[JSD-UC-001#UC-S9]], 순서 규칙은 [[JSD-API-002]] 4장. 루프 상태(`LoopState` — 단계·차례·도구 수·strikes·필수 항목 되돌림 여부·history)는 메모리에만 있다. 모델은 인자로 받는다 — 라우터가 루프를 띄울 때 `OpenAIAgentModel`을 넘기고 테스트는 가짜를 넘긴다.
+`review` 안이지만 클래스가 아니라 함수 열이다. 루프가 여기 사는 이유는 [[JSD-DOM-001]] 5.2, 시간축은 [[JSD-UC-001#UC-S9]], 순서 규칙은 [[JSD-API-002]] 4장. 루프 상태(`LoopState`, 2.8)는 메모리에만 있다. 모델은 인자로 받는다 — 라우터가 루프를 띄울 때 `OpenAIAgentModel`을 넘기고 테스트는 가짜를 넘긴다.
 
 ```
 run_review(review_id: str, model: AgentModel) -> None
@@ -1019,7 +1021,7 @@ run_review(review_id: str, model: AgentModel) -> None
       turn = model.complete(history, 도구 9종)    토큰과 원화를 Review의 cost_krw · llm_cost_krw에 더한다
       turn.text가 있으면 say(turn.text)
       turn.tool_calls가 비었으면 strikes += 1 → 3이면 force_report(text_only), 아니면 "도구를 고르세요"를 history에
-      있으면 남은 도구 수(LIMITS.tool_calls − tool_calls)만큼 앞에서부터 dispatch → tool 메시지 → 봉투를 history에
+      있으면 run_tools(state, turn.tool_calls) — 남은 도구 수(LIMITS.tool_calls − tool_calls)만큼 앞에서부터
         남은 수를 넘는 call은 부르지 않고 force_report(tool_limit). 한 차례에 여럿이 와도 20회를 넘지 않는다
       write_report가 ok면 끝
     ReviewService.finish(done). 예상 밖 예외는 error 메시지 + finish(failed)
@@ -1036,11 +1038,19 @@ run_follow_up(review_id: str, turn_id: int, model: AgentModel) -> None
       turn = model.complete(history, 남은 > 0이면 허용 도구 · 0이면 도구 없이 "도구 없이 답하세요"를 한 번 붙여)
       turn.tool_calls가 비었으면 turn.text가 답이다 → say(text). turn.refused면 notice(out_of_scope)도. 끝
       남은 = 0이면 부르지 않는다 → turn.text가 있으면 say → notice(tool_limit) → 끝
-      앞에서부터 남은 수만큼 dispatch. 넘는 call은 부르지 않고 봉투(ok false · error tool_limit)만 history에
+      run_tools(state, turn.tool_calls) — 앞에서부터 남은 수만큼. 넘는 call은 부르지 않고 봉투(ok false · error tool_limit)만 history에
     FollowUpTurn.status done → ReviewService.finish(done)
     예외 처리는 run_review와 같다. review 행이 없으면 아무것도 쓰지 않고 멈춘다
 
-dispatch(state: LoopState, call: ToolCall) -> ToolResult
+run_tools(state: LoopState, calls: list[ToolCall]) -> bool
+    한 차례의 호출을 남은 수만큼 돈다. 조회 도구는 fetch_lookup을 먼저 동시에 돌리고, 나머지와 적용은 call 순서대로 dispatch
+    call마다 tool 메시지(ToolCard)와 봉투를 history에. write_report가 ok면 true
+
+fetch_lookup(state: LoopState, call: ToolCall) -> PriceLookup | BuildingLedger | DefaulterMatch | AppError
+    lookup_price · lookup_building · match_defaulter의 LookupService 호출만. 자기 세션을 열고 facts를 쓰지 않는다
+
+dispatch(state: LoopState, call: ToolCall, fetched: object | None = None) -> ToolResult
+    조회 도구는 fetch_lookup이 미리 받은 fetched를 적용만 한다
     목록 밖 이름 · 이 단계에서 허용 안 된 이름 → unknown_tool, strikes += 1
     read_registry가 한 번도 ok가 아닌데 다른 도구 → read_registry_first
     인자를 review/schemas.py 인자 모델로 검증. 어긋나면 unknown_tool
@@ -1060,10 +1070,10 @@ dispatch(state: LoopState, call: ToolCall) -> ToolResult
     AppError(code) → ok false · error code. 조회 실패 코드는 facts.failures에. 그 밖의 예외 → tool_failed. 어느 쪽이든 루프는 계속
     부른 도구는 결과와 상관없이 facts.tried에 — ask_user는 kind까지(ask_user:tenants), read_registry는 문서 종류까지(read_registry:land)
       required_unchecked는 "시도하지 않음"이다(API-002 2장). 실패한 조회를 다시 부르게 하지 않는다
-    summary는 결과로 서버가 만든다 — money.format_manwon
+    summary는 tool_summary(call, result)가 결과로 만든다 — money.format_manwon. 이름을 싣지 않는다
     tool 메시지 data = ToolCard. detail은 가린 data
 
-  사실 인자 대조 — 인자는 "사용자가 대화에서 말했을 때만"이다(API-002 3.1). 모델의 말이 등급·수치를 움직이지 못하게 서버가 확인한다(PRD R6)
+  check_stated(review_id: str, args: dict) -> dict — 사실 인자 대조. 인자는 "사용자가 대화에서 말했을 때만"이다(API-002 3.1). 모델의 말이 등급·수치를 움직이지 못하게 서버가 확인한다(PRD R6)
     price_manwon · other_tenants_manwon            이 검토의 사용자 메시지·답변 text에서 factcheck.amounts로 뽑은 값에 있을 때만
     vacant_rooms                                   사용자 메시지·답변 text에 그 정수가 있을 때만
     proxy_status · illegal_building · owner_type   받지 않는다. 값은 그 종류 질문의 답에서만 온다(ReviewService.ask)
