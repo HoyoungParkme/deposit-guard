@@ -74,7 +74,7 @@ app/
 ├── jobs.py                 배치 명령 입구. python -m app.jobs <명령> (4.15)
 │
 ├── core/                   도메인에 속하지 않는 것. 도메인을 import하지 않는다
-│   ├── config.py           환경 변수(API 키·모델 ID·DB URL·앱 비밀키)와 한도 상수 LIMITS
+│   ├── config.py           환경 변수(API 키·모델 ID·DB URL·앱 비밀키), 한도 상수 LIMITS, 단가 상수 PRICES(파싱 쪽당 원 · 입출력 토큰당 원)
 │   ├── db.py               비동기 엔진·세션. 예외 문자열에 바인드 값을 싣지 않는다(4.14)
 │   ├── errors.py           AppError(code) 하나, 코드 → HTTP 상태 표, 에러 봉투 핸들러 (API-001 2장)
 │   ├── logging.py          JSON 로그. 주민번호 형태 숫자를 지우는 필터 · httpx·httpcore 로거는 WARNING(4.14)
@@ -648,7 +648,7 @@ classDiagram
 | `Message` | `message_id: str` · `seq: int` · `role: Role` · `kind: MessageKind` · `text: str` · `citations: list[Citation]` · `data: dict?` · `created_at: datetime` | list_messages · stream. `ReviewRecord` 행 + `CitationService.for_messages` | review |
 | `ToolCard` | `tool: ToolName` · `status: ToolStatus` · `error_code: str?` · `elapsed_ms: int` · `summary: str` · `detail: dict?` | `Message.data` (kind tool). `detail`은 가린 도구 응답이고 되묻기 history에도 들어간다(4.2) | review |
 | `AnswerData` | `question_id: str?` · `choice: str?` · `text: str?` · `document_id: str?` | `Message.data` (kind answer) | review |
-| `ReportCard` | `grade: GradeLevel` · `signal_count: int` · `unknown_count: int` · `rule_version: str` | `Message.data` (kind report) | review |
+| `ReportCard` | `grade: GradeLevel` · `signal_count: int` · `unknown_count: int` · `rule_version: str` · `revision_no: int` · `revision_reason: str?` | `Message.data` (kind report) | review |
 | `NoticeData` | `code: str` | `Message.data` (kind notice). 코드 answer_timeout · tool_limit · cost_limit · text_only · out_of_scope | review |
 | `Error` | `code: str` · `detail: str` · `field: str?` | 에러 봉투 · `Message.data` (kind error) · 스트림 error. `detail`은 코드별 문구이고 예외 문자열을 싣지 않는다(4.14) | shared |
 | `Citation` (DTO) | `key: str` · `label: str` · `document_id: str` · `block_ids: list[str]` · `entry_ids: list[str]` | Message · Report. ORM은 `CitationRow` | citation |
@@ -1185,7 +1185,7 @@ classDiagram
 - `parse`: 포트를 한 번 부른다. 업스테이지 타임아웃 30초·재시도 1회는 어댑터 안이다([[JSD-UC-001#UC-S1]] 1a). 바이트는 메모리에서만 오간다
 - `create_extract`: `service_parse.read_extract(html)` → 갑구·을구가 없으면 not_registry. 이 검토에 이미 등기부가 있으면 `entry_id`에 `land-` 접두어를 붙인다. 한 검토에 두 장까지([[JSD-DOM-001#RegistryExtract]]). `file_sha256`은 행에 남겨 검토를 지울 때 파싱 캐시를 찾는다
 - `owner`: 갑구에서 말소되지 않은 마지막 소유권 항목의 권리자. 공유(여럿)면 첫 이름만 쓰고 경고를 남긴다(도메인 모델 미결사항)
-- `holder_names`: 이 검토 모든 항목의 권리자를 등기부 순서·갑구 → 을구 순서로. 라벨 순서가 여기서 정해진다
+- `holder_names`: 이 검토 항목의 권리자 중 법인이 아닌 이름(`holder_is_corporation`이 true가 아닌 것)을 등기부 순서·갑구 → 을구 순서로. 같은 이름도 나온 대로 둔다. 라벨 순서가 여기서 정해진다. 법인명은 가리지 않으므로 싣지 않는다
 - `entries`: 이 검토의 항목만 돌려준다. `entry_ids`가 None이면 전부. 없는 ID는 조용히 빠지고, 대조는 부르는 쪽이 한다
 - `block_excerpt`: 블록이 속한 항목과 원문 한 줄. 어느 항목에도 없는 블록이면 None
 - `delete_for_review`: 이 검토의 문서·항목을 지우고 지운 문서의 `file_sha256` 목록을 돌려준다 — `cancel`이 그 해시로 파싱 캐시를 지운다
@@ -1549,7 +1549,7 @@ report/adapters/openai_writer.py
 
 infra/openai.py
     client() -> AsyncOpenAI           키 · 모델 ID는 환경 변수 (INFRA C7)
-    usage_krw(tokens_in: int, tokens_out: int) -> int
+    usage_krw(tokens_in: int, tokens_out: int) -> int   PRICES의 토큰 단가로 원화 환산. 파싱 비용은 parsed_pages × PRICES.parse_page_krw
 ```
 
 **규칙** — 어댑터는 바깥 형식을 DTO로 바꾸는 데서 끝나고 판단하지 않는다. 로그에는 요청 URL의 키·이름을 남기지 않는다. httpx는 요청마다 전체 URL(서비스 키·번·지 포함)을 INFO로 남기므로 `core/logging.py`가 httpx·httpcore 로거를 WARNING으로 둔다.
@@ -1557,8 +1557,8 @@ infra/openai.py
 ### 4.14 shared — 순수 유틸
 
 ```
-privacy.person_labels(holders: list[tuple[str, bool]]) -> dict[str, str]
-    법인이 아닌 이름을 첫 등장 순서로 개인 A · 개인 B. 같은 이름은 같은 라벨
+privacy.person_labels(names: list[str]) -> dict[str, str]
+    받은 이름(법인이 아닌 것만 온다)을 첫 등장 순서로 개인 A · 개인 B. 같은 이름은 같은 라벨
 
 privacy.mask_text(text: str, names: list[str]) -> str
     아는 이름 → 라벨 또는 ○○ · 주민번호 형태 숫자 삭제 · 번지와 동·호수 삭제. names가 비면 뒤의 둘만 한다(공유본)
