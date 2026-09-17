@@ -19,7 +19,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | 단계 | 언제 | 끝나는 조건 | 도구 |
 |---|---|---|---|
 | 검토 | 검토 시작부터 의견서까지 | `write_report` 성공 | 9종 전부 |
-| 되묻기 | 의견서 뒤 사용자가 입력할 때마다 | 에이전트가 답을 내면 한 차례 끝 | `get_criteria` `summarize_rights` `check_signals` `write_report` `lookup_price` |
+| 되묻기 | 의견서 뒤 사용자가 입력할 때마다 | 에이전트가 답을 내면 한 차례 끝 | `get_criteria` `summarize_rights` `check_signals` `write_report` `lookup_price`. 서류를 올려 연 차례는 `read_registry`도 |
 
 **도구 묶음.** 3절은 도구를 카드로 나열한다. 묶음은 이 표로 본다.
 
@@ -79,8 +79,6 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 
 | 코드 | 도구 | 뜻 | 에이전트가 할 일 |
 |---|---|---|---|
-| `not_registry` | read_registry | 갑구·을구가 없음 | 검토를 멈추고 이유를 말한다 |
-| `parse_failed` | read_registry | 파싱 서비스 실패 (재시도 후) | 검토를 멈추고 다시 올려 달라고 한다 |
 | `read_registry_first` | 전부 | 등기부를 읽기 전에 다른 도구를 부름 | `read_registry`를 먼저 부른다 |
 | `no_region_code` | lookup_price · lookup_building | 주소로 법정동을 찾지 못함 | 가격은 다음 순서로, 대장은 확인 못 함으로 |
 | `no_trades` | lookup_price | 같은 단지 거래 없음 | 등기부 거래가액으로 넘어간다 |
@@ -92,6 +90,9 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | `required_unchecked` | write_report | 필수 검토 항목을 시도하지 않음 (한 번만) | 목록의 도구를 부른다 |
 | `unknown_tool` | 루프 | 목록 밖 도구 | 목록 안에서 고른다 |
 | `tool_failed` | 루프 | 예상 밖 예외 | 다음 도구로 넘어간다 |
+| `tool_limit` | 루프 | 되묻기 한 차례에 도구 5회 초과. 그 호출은 부르지 않음 | 도구 없이 답한다 |
+
+등기부가 아닌 파일과 파싱 실패는 도구 에러가 아니다. 파일을 올린 요청이 `not_registry`(400)·`parse_failed`(502)로 답한다 ([[JSD-API-001]] 2장).
 
 ## 3. 도구 정의
 
@@ -147,7 +148,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 ```json
 {
   "name": "summarize_rights",
-  "description": "말소 제외 선순위를 채권최고액으로 합산하고 주택 가격이 있으면 부채비율을 낸다. 가격과 다른 세입자 보증금은 생략하면 서버가 조회 결과와 답변에서 정해진 순서로 채운다. 사용자가 대화에서 직접 말한 값만 인자로 넣는다.",
+  "description": "말소 제외 선순위를 채권최고액으로 합산하고 주택 가격이 있으면 부채비율을 낸다. 가격과 다른 세입자 보증금은 생략하면 서버가 조회 결과와 답변에서 정해진 순서로 채운다. 사용자가 대화에서 직접 말한 값만 인자로 넣는다. 서버가 이 검토의 사용자 메시지·답변에 그 값이 있는지 대조하고 없으면 그 인자를 버린다.",
   "inputSchema": {
     "type": "object",
     "properties": {
@@ -169,16 +170,8 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 ```json
 {
   "name": "check_signals",
-  "description": "규칙표로 위험 신호와 등급을 정한다. 결과는 바꿀 수 없다. 질문 답변과 명단 대조 결과는 서버가 채운다. 사용자가 대화에서 직접 밝힌 사실만 인자로 넣는다.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "proxy_status": { "type": "string", "enum": ["self", "proxy_with_poa", "proxy_without_poa", "unknown"], "description": "사용자가 대화에서 밝혔을 때만" },
-      "illegal_building": { "type": "string", "enum": ["yes", "no", "unknown"], "description": "사용자가 대화에서 밝혔을 때만" },
-      "owner_type": { "type": "string", "enum": ["individual", "corporation", "unknown"], "description": "사용자가 대화에서 밝혔을 때만" }
-    },
-    "required": []
-  }
+  "description": "규칙표로 위험 신호와 등급을 정한다. 결과는 바꿀 수 없다. 인자는 없다. 질문 답변과 명단 대조 결과는 서버가 채운다. 대리 여부·위반건축물·임대인 유형은 ask_user의 답으로만 정해진다.",
+  "inputSchema": { "type": "object", "properties": {}, "required": [] }
 }
 ```
 
@@ -329,7 +322,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | 병렬 | `lookup_price`·`lookup_building`·`match_defaulter`는 한 턴에 함께 부를 수 있다 |
 | 텍스트만 | 도구 없이 글만 내면 "도구를 고르세요"로 되돌린다. 3회면 `write_report`를 강제로 부른다 |
 | 말풍선 | 도구를 부르기 전 판단 문장 하나를 `say`로 낸다. "무엇을 봅니다: 왜" 형식 |
-| 한도 | 도구 20회, 질문 5회, 비용 한도. 도달하면 `write_report`를 강제로 부른다 ([[JSD-PRD-001#R10]]) |
+| 한도 | 도구 20회, 비용 한도. 도달하면 `write_report`를 강제로 부른다 ([[JSD-PRD-001#R10]]). 질문 5회에 닿으면 더 묻지 않고 확인 못 함으로 진행한다 |
 | 금지 | 목록 밖 도구, 등급·수치를 바꾸는 요청, 도구 결과 밖의 사실 |
 
 ### 4.2 되묻기 단계
@@ -342,7 +335,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | 값 제공 | 사용자가 시세·세입자 보증금 같은 값을 주면 `summarize_rights` → `check_signals` → `write_report(revision_reason)` 순서로 다시 돌린다 |
 | 서류 추가 | 사용자가 토지 등기부 등을 첨부하면 `read_registry(document_id)`부터 다시 돌린다 |
 | 거절 | 등급·수치를 바꿔 달라는 요청은 도구를 부르지 않고 이유를 말한다. 메시지 코드 `out_of_scope` |
-| 한도 | 한 차례에 도구 5회. 검토 전체의 되묻기 횟수 한도는 미결 |
+| 한도 | 한 차례에 도구 5회. 넘는 호출은 부르지 않고 `tool_limit`을 돌려준다. 검토 전체의 되묻기 횟수 한도는 미결 |
 
 ### 4.3 시스템 프롬프트 골자
 
