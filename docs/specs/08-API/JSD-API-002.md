@@ -21,6 +21,15 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | 검토 | 검토 시작부터 의견서까지 | `write_report` 성공 | 9종 전부 |
 | 되묻기 | 의견서 뒤 사용자가 입력할 때마다 | 에이전트가 답을 내면 한 차례 끝 | `get_criteria` `summarize_rights` `check_signals` `write_report` `lookup_price` |
 
+**도구 묶음.** 3절은 도구를 카드로 나열한다. 묶음은 이 표로 본다.
+
+| 묶음 | 도구 |
+|---|---|
+| 읽기와 계산 | `read_registry` `summarize_rights` `check_signals` |
+| 외부 확인 | `lookup_price` `lookup_building` `match_defaulter` |
+| 대화 | `ask_user` `get_criteria` |
+| 산출 | `write_report` |
+
 ## 1. 규칙
 
 ### 1.1 응답 봉투
@@ -33,6 +42,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 
 - `summary`는 서버가 만든 사람이 읽는 한 줄이다. 그대로 도구 카드 메시지(`kind: tool`)가 된다
 - `data`에 등기 사실이 들어가면 반드시 `entry_id`가 함께 온다. 에이전트는 이 ID로만 인용할 수 있다
+- 3절 스키마는 MCP 표기대로 `inputSchema` 키에 적는다. OpenAI 함수 호출로 넘길 때 서버가 `parameters` 키로 옮긴다
 
 ### 1.2 세션 정보는 서버가 채운다
 
@@ -83,9 +93,8 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 | `unknown_tool` | 루프 | 목록 밖 도구 | 목록 안에서 고른다 |
 | `tool_failed` | 루프 | 예상 밖 예외 | 다음 도구로 넘어간다 |
 
-## 3. 도구
+## 3. 도구 정의
 
-### 3.1 읽기와 계산
 
 #### read_registry 등기부 읽기
 
@@ -95,7 +104,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "read_registry",
   "description": "올라온 등기부를 표제부·갑구·을구 항목으로 읽는다. 검토의 첫 호출이어야 한다. 토지 등기부가 추가로 올라오면 document_id를 넣어 다시 부른다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "document_id": { "type": "string", "description": "읽을 문서. 생략하면 아직 읽지 않은 첫 문서" }
@@ -139,7 +148,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "summarize_rights",
   "description": "말소 제외 선순위를 채권최고액으로 합산하고 주택 가격이 있으면 부채비율을 낸다. 가격과 다른 세입자 보증금은 생략하면 서버가 조회 결과와 답변에서 정해진 순서로 채운다. 사용자가 대화에서 직접 말한 값만 인자로 넣는다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "price_manwon": { "type": "integer", "description": "사용자가 대화에서 말한 시세. 없으면 생략" },
@@ -161,7 +170,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "check_signals",
   "description": "규칙표로 위험 신호와 등급을 정한다. 결과는 바꿀 수 없다. 질문 답변과 명단 대조 결과는 서버가 채운다. 사용자가 대화에서 직접 밝힌 사실만 인자로 넣는다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "proxy_status": { "type": "string", "enum": ["self", "proxy_with_poa", "proxy_without_poa", "unknown"], "description": "사용자가 대화에서 밝혔을 때만" },
@@ -185,7 +194,6 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 }
 ```
 
-### 3.2 외부 확인
 
 #### lookup_price 실거래가 조회
 
@@ -195,7 +203,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "lookup_price",
   "description": "국토부 실거래가에서 최근 12개월 같은 단지·유사 면적 매매를 찾는다. 주소와 건물 종류는 서버가 채운다. lookup_building, match_defaulter와 한 턴에 함께 부를 수 있다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "area_m2": { "type": "number", "description": "전용면적을 알 때만. 생략하면 등기부 값" }
@@ -215,7 +223,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "lookup_building",
   "description": "건축HUB에서 주용도·대장 구분·가구수·세대수·사용승인일을 조회한다. 위반건축물 여부는 이 경로로 오지 않으므로 필요하면 ask_user로 묻는다. 주소는 서버가 채운다.",
-  "parameters": { "type": "object", "properties": {}, "required": [] }
+  "inputSchema": { "type": "object", "properties": {}, "required": [] }
 }
 ```
 
@@ -229,7 +237,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "match_defaulter",
   "description": "HUG 상습 채무불이행자 공개 명단과 이름을 완전 일치로 대조한다. 이름은 서버가 채우며 모델에는 결과만 온다. 일치는 동명이인일 수 있다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "target": { "type": "string", "enum": ["owner", "counterparty"], "description": "생략하면 계약 상대방, 없으면 소유자" }
@@ -241,7 +249,6 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 
 응답 `data`: `{ matched: bool, match_count, snapshot_date, note: "동명이인 가능. 나이·주소로 직접 확인" }`. 공개 항목(나이·주소·채무)은 모델에 보내지 않고 의견서 화면에서만 보인다.
 
-### 3.3 대화
 
 #### ask_user 사용자에게 묻기
 
@@ -251,7 +258,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "ask_user",
   "description": "서류와 조회로 알 수 없는 것을 한 번 묻는다. 대화가 멈추고 답이 오면 재개된다. 한 검토에 최대 5회. 이유 없는 질문은 하지 않는다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "kind": { "type": "string", "enum": ["illegal_building", "price", "tenants", "proxy", "owner_type", "land_registry", "other"] },
@@ -276,7 +283,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "get_criteria",
   "description": "판정 규칙과 공식 출처를 조회한다. 사용자가 기준·이유를 되물을 때 규칙을 지어내지 않고 이 결과로만 답한다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "topic": { "type": "string", "enum": ["grade", "signals", "debt_ratio", "required_checks", "price_order", "priority_repayment", "limits", "sources"] },
@@ -289,7 +296,6 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 
 응답 `data`: [[JSD-API-001#GET/api/criteria]] 응답 중 해당 부분과 `rule_version`.
 
-### 3.4 산출
 
 #### write_report 의견서 작성
 
@@ -299,7 +305,7 @@ upstream: [JSD-API-001, JSD-UI-001, JSD-DOM-001, JSD-PRD-001, JSD-UC-001]
 {
   "name": "write_report",
   "description": "등급·신호·합산·답변으로 의견서를 만든다. 검토 단계의 마지막 호출이다. 되묻기 단계에서 값이 바뀌어 summarize_rights·check_signals를 다시 불렀다면 revision_reason을 넣어 다시 부른다. 숫자와 등급은 도구 출력 그대로 쓰인다.",
-  "parameters": {
+  "inputSchema": {
     "type": "object",
     "properties": {
       "agent_notes": { "type": "string", "description": "검토하며 본 특이점 한두 문장. 결론 문장 생성의 참고" },
