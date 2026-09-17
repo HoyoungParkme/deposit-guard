@@ -154,10 +154,10 @@ flowchart LR
 | 업로드 원본 (PDF·이미지) | 메모리 → 파싱 API 전송 → 즉시 폐기. 디스크에 쓰지 않음 | 요청 처리 중만 | 있음 |
 | 파싱 결과 (HTML·블록·구조화 JSON) | Postgres `review_documents` | 검토를 만든 뒤 24시간, 이후 삭제 | 있음 (소유자 이름 등) |
 | 검토 세션·이벤트(진행 기록) | Postgres `review_sessions`, `review_events` | 만든 뒤 24시간. 세션 행만 내용을 비워 만료 상태로 남김 | 이벤트 문장에 이름 없음 |
-| 의견서 JSON | Postgres `reports` | 검토를 만든 뒤 24시간 | 이름·상세주소 포함 (본인 열람용) |
+| 의견서 JSON | Postgres `reports` | 검토를 만든 뒤 24시간 | 개인 이름 없음. 개인 권리자는 개인 A로 가리고 지역은 시군구·동까지 |
 | 공유본 | Postgres `shares` (마스킹된 사본) | 7일 | 없음 |
 | 파일 해시 캐시 | Postgres `file_cache` (해시 → 업스테이지 HTML) | 24시간. 그 전에 그 파일의 검토를 지우면 함께 삭제. 예시 파일 3건은 만료 없음 | 있음 (소유자 이름) |
-| 외부 조회 캐시 | Postgres `lookup_cache` | 24시간 | 없음 |
+| 외부 조회 캐시 | Postgres `lookup_cache` (키는 조회 인자를 HMAC한 값, 응답은 판정에 쓰는 필드만) | 24시간 | 없음. 건축물대장의 번·지와 대지위치는 원문으로 남기지 않는다 |
 | HUG 명단 스냅샷 | Postgres `hug_defaulters` | 일 1회 갱신, 최신본만 | 공개 정보 |
 | 비용 집계 | Postgres `usage_log` (세션별 토큰·호출·원화 환산) | 무기한 | 없음 |
 | 예시 등기부 PDF | 저장소 `assets/samples/` | 영구 | 없음 (가상) |
