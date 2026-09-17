@@ -680,7 +680,7 @@ classDiagram
 | `LoopState` | `review_id: str` · `phase: Phase` · `turn_id: int?` · `model: AgentModel` · `history: list[dict]` · `strikes: int` · `required_returned: bool` · `read_ok: bool` · `forced: bool` | 루프 메모리. 저장하지 않는다 | review |
 | `Registry` | `document_id: str` · `doc_kind: DocKind` · `building: Property?` · `gap: list[RegistryEntry]` · `eul: list[RegistryEntry]` · `warnings: list[str]` | RegistryService.read → 루프가 `owner_matches_counterparty`를 더하고 가린 뒤 모델 | registry |
 | `Property` | `region: str` · `building_type: BuildingType` · `is_collective: bool` · `land_right_unregistered: bool` · `separate_land_registry: bool` + 내부 `lot_address: str?` · `exclusive_area_m2: float?` · `building_name: str?` | Registry.building · LookupService 인자 · SignalInput · ReportInput | registry |
-| `RegistryEntry` (DTO) | `entry_id: str` · `rank_no: str` · `purpose_code: PurposeCode` · `received_at: date?` · `amount_manwon: int?` · `price_manwon: int?` · `holder: str?` · `holder_is_corporation: bool?` · `cancelled: bool` + 내부 `section: Section` · `parent_entry_id: str?` · `cause: str?` · `cancelled_by_entry_id: str?` | Registry · ReportInput. `rules`에는 `EntryFact`로 옮긴다. ORM은 `RegistryEntryRow` | registry |
+| `RegistryEntry` (DTO) | `entry_id: str` · `rank_no: str` · `purpose_code: PurposeCode` · `received_at: date?` · `amount_manwon: int?` · `price_manwon: int?` · `holder: str?` · `holder_is_corporation: bool?` · `cancelled: bool` + 내부 `document_id: str` · `block_ids: list[str]` · `location_label: str` · `section: Section` · `parent_entry_id: str?` · `cause: str?` · `cancelled_by_entry_id: str?` | Registry · ReportInput. `rules`에는 `EntryFact`로 옮긴다. ORM은 `RegistryEntryRow` | registry |
 | `PriceLookup` | `price_manwon: int` · `count: int` · `period: str` · `source: PriceSource` · `samples: list[{date, amount_manwon, area_m2}]` | LookupService.price · ReviewFacts | lookup |
 | `BuildingLedger` | `main_use: str` · `ledger_kind: LedgerKind` · `households: int?` · `families: int?` · `approved_at: date?` · `multiple_candidates: bool` | LookupService.building · ReviewFacts. `rules`에는 `ledger_main_use`로 옮긴다 | lookup |
 | `DefaulterMatch` | `matched: bool` · `match_count: int` · `snapshot_date: date` · `note: str` | LookupService.defaulter · ReviewFacts. `rules`에는 `defaulter_matched`로 옮긴다 | lookup |
@@ -1340,7 +1340,7 @@ classDiagram
 | `purge_cache` | jobs.py (시간 1회) | [[JSD-UC-001#UC-S10]] | |
 
 **규칙이 사는 곳**
-- `price`: 건물 종류로 국토부 실거래가 API를 고른다 — 아파트 · 연립다세대 · 오피스텔 · 단독다가구. 최근 12개월을 달마다 조회하고 캐시 키는 HMAC(trade, 지역 코드, 연월)이다. 같은 단지(건물명)·유사 면적 매매의 평균과 건수·기간을 낸다. 없으면 no_trades. `source`는 trade_api 하나뿐이고 다음 순서는 `rules`가 정한다
+- `price`: 건물 종류로 국토부 실거래가 API를 고른다 — 아파트 · 연립다세대 · 오피스텔 · 단독다가구. 최근 12개월을 달마다 조회하고 캐시 키는 HMAC(trade, 실거래가 API 종류, 지역 코드, 연월)이다 — 종류가 빠지면 아파트와 연립다세대가 같은 키를 쓴다. 같은 단지(건물명)·유사 면적 매매의 평균과 건수·기간을 낸다. 없으면 no_trades. `source`는 trade_api 하나뿐이고 다음 순서는 `rules`가 정한다
 - `building`: 건축HUB 표제부를 법정동코드·번·지로 조회한다. 캐시 키는 HMAC(building, 법정동코드, 번, 지)이고 캐시에는 대지위치·도로명주소를 뺀 응답을 둔다. 동이 여럿이면 `multiple_candidates`. 위반건축물 여부는 돌려주지 않는다(API에 없음)
 - `defaulter`: 스냅샷이 비었으면 no_snapshot, 이름이 없으면 no_name. 공백을 뺀 완전 일치. 결과에 이름·공개 항목을 싣지 않는다
 - `refresh_defaulters`: 포트로 명단을 끝까지 다 읽은 뒤에만 한 트랜잭션으로 교체한다. 중간에 실패하거나 0건이면 마지막 스냅샷을 그대로 두고 실패로 남긴다 — 페이지 구조가 바뀌면 예외 없이 0건이 오기 쉽다([[JSD-INFRA-001]] 7장)
