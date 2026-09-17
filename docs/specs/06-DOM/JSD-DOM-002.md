@@ -278,7 +278,7 @@ frontend/
 
 #### Review 검토
 
-테이블: `reviews` · 도메인: [[JSD-DOM-001#Review]]
+테이블: [[JSD-DOM-003#reviews]] · 도메인: [[JSD-DOM-001#Review]]
 
 ```mermaid
 classDiagram
@@ -312,7 +312,7 @@ classDiagram
 
 #### ReviewRecord 대화 메시지
 
-테이블: `review_records` · 도메인: [[JSD-DOM-001#ReviewRecord]]
+테이블: [[JSD-DOM-003#review_records]] · 도메인: [[JSD-DOM-001#ReviewRecord]]
 
 ```mermaid
 classDiagram
@@ -337,7 +337,7 @@ classDiagram
 
 #### Question 질문과 답변
 
-테이블: `questions` · 도메인: [[JSD-DOM-001#Question]]
+테이블: [[JSD-DOM-003#questions]] · 도메인: [[JSD-DOM-001#Question]]
 
 ```mermaid
 classDiagram
@@ -366,7 +366,7 @@ classDiagram
 
 #### FollowUpTurn 되묻기 차례
 
-테이블: `follow_up_turns` · 도메인: [[JSD-DOM-001#FollowUpTurn]]
+테이블: [[JSD-DOM-003#follow_up_turns]] · 도메인: [[JSD-DOM-001#FollowUpTurn]]
 
 ```mermaid
 classDiagram
@@ -389,7 +389,7 @@ classDiagram
 
 #### UsageLog 사용량 기록
 
-테이블: `usage_logs`
+테이블: [[JSD-DOM-003#usage_logs]]
 
 ```mermaid
 classDiagram
@@ -415,7 +415,7 @@ classDiagram
 
 #### RegistryExtract 등기부
 
-테이블: `registry_extracts` · 도메인: [[JSD-DOM-001#RegistryExtract]]
+테이블: [[JSD-DOM-003#registry_extracts]] · 도메인: [[JSD-DOM-001#RegistryExtract]]
 
 ```mermaid
 classDiagram
@@ -446,7 +446,7 @@ classDiagram
 
 #### RegistryEntry 등기 항목
 
-테이블: `registry_entries` · 도메인: [[JSD-DOM-001#RegistryEntry]]
+테이블: [[JSD-DOM-003#registry_entries]] · 도메인: [[JSD-DOM-001#RegistryEntry]]
 
 ```mermaid
 classDiagram
@@ -484,7 +484,7 @@ classDiagram
 
 #### Citation 인용
 
-테이블: `citations` · 도메인: [[JSD-DOM-001#Citation]]
+테이블: [[JSD-DOM-003#citations]] · 도메인: [[JSD-DOM-001#Citation]]
 
 ```mermaid
 classDiagram
@@ -509,7 +509,7 @@ classDiagram
 
 #### Opinion 의견서
 
-테이블: `opinions` · 도메인: [[JSD-DOM-001#Opinion]]
+테이블: [[JSD-DOM-003#opinions]] · 도메인: [[JSD-DOM-001#Opinion]]
 
 ```mermaid
 classDiagram
@@ -530,7 +530,7 @@ classDiagram
 
 #### SharedOpinion 공유본
 
-테이블: `shared_opinions` · 도메인: [[JSD-DOM-001#SharedOpinion]]
+테이블: [[JSD-DOM-003#shared_opinions]] · 도메인: [[JSD-DOM-001#SharedOpinion]]
 
 ```mermaid
 classDiagram
@@ -550,7 +550,7 @@ classDiagram
 
 #### DefaulterRecord 공개 명단 기록
 
-테이블: `defaulter_records` · 도메인: [[JSD-DOM-001#DefaulterRecord]]
+테이블: [[JSD-DOM-003#defaulter_records]] · 도메인: [[JSD-DOM-001#DefaulterRecord]]
 
 ```mermaid
 classDiagram
@@ -569,7 +569,7 @@ HUG 공개 명단 전체의 최신 스냅샷이다. 갱신은 행 전체 교체�
 
 #### RegionCode 법정동코드
 
-테이블: `region_codes`
+테이블: [[JSD-DOM-003#region_codes]]
 
 ```mermaid
 classDiagram
@@ -584,7 +584,7 @@ classDiagram
 
 #### LookupCache 조회 캐시
 
-테이블: `lookup_caches`
+테이블: [[JSD-DOM-003#lookup_caches]]
 
 ```mermaid
 classDiagram
@@ -604,7 +604,7 @@ classDiagram
 
 #### IpQuota 요청 한도
 
-테이블: `ip_quotas`
+테이블: [[JSD-DOM-003#ip_quotas]]
 
 ```mermaid
 classDiagram
@@ -620,7 +620,7 @@ IP 원문은 저장하지 않고 앱 비밀키로 HMAC한 값만 둔다. 예시 
 
 #### FileCache 파싱 캐시
 
-테이블: `file_caches`
+테이블: [[JSD-DOM-003#file_caches]]
 
 ```mermaid
 classDiagram
