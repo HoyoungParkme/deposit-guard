@@ -653,7 +653,7 @@ classDiagram
 | `Error` | `code: str` · `detail: str` · `field: str?` | 에러 봉투 · `Message.data` (kind error) · 스트림 error. `detail`은 코드별 문구이고 예외 문자열을 싣지 않는다(4.14) | shared |
 | `Citation` (DTO) | `key: str` · `label: str` · `document_id: str` · `block_ids: list[str]` · `entry_ids: list[str]` | Message · Report. ORM은 `CitationRow` | citation |
 | `Question` (DTO) | `question_id: str` · `kind: QuestionKind` · `text: str` · `why: str` · `input_type: InputType` · `options: list[str]?` · `help_url: str?` · `asked_no: int` | `Message.data` (kind question) · ReviewView. ORM은 `QuestionRow` | review |
-| `Report` | `grade: Grade` · `conclusion: {text, citations}` · `rights: RightsSummary` · `signals: list[{code, severity, label, explanation, source, source_date, citations}]` · `checked: list[{code, label, result: CheckResult, citations}]` · `todos: list[Todo]` · `clauses: list[SpecialClause]` · `questions_to_ask: list[str]` · `notices: list[str]` · `corrections: int` · `llm_fallback: bool` | ReportService.get · override_values · SharedView | report |
+| `Report` | `grade: Grade` · `conclusion: {text, citations}` · `rights: RightsSummary` · `signals: list[{code, severity, label, explanation, source, source_date, citations}]` · `checked: list[{code, label, result: CheckResult, citations}]` · `todos: list[Todo]` · `clauses: list[SpecialClause]` · `questions_to_ask: list[str]` · `notices: list[str]` · `corrections: int` · `llm_fallback: bool` · `revision_no: int` · `revision_reason: str?` | ReportService.get · override_values · SharedView | report |
 | `Grade` | `level: GradeLevel` · `deciders: list[str]` · `unknowns: list[str]` · `rule_version: str` | Report · SignalCheck | rules |
 | `Todo` | `stage: TodoStage` · `title: str` · `how: str` · `cost: str` · `because: list[str]` | Report | report |
 | `SpecialClause` | `title: str` · `body: str` · `source: str` · `filled: dict` | Report | report |
@@ -685,7 +685,7 @@ classDiagram
 | `RiskSignal` | `code: str` · `severity: Severity` · `label: str` · `source: str` · `entry_ids: list[str]` + 내부 `source_date: date` | SignalCheck | rules |
 | `AskArgs` | `kind: QuestionKind` · `text: str` · `why: str` · `input_type: InputType` · `options: list[str]?` · `help_url: str?` | ask_user 인자 → ReviewService.ask | review |
 | `AskAnswer` | `question_id: str` · `answer: str` · `document_id: str?` | ReviewService.ask → ask_user 응답 | review |
-| `ReportResult` | `grade: GradeLevel` · `signal_count: int` · `unknown_count: int` · `corrections: int` · `rule_version: str` + 내부 `llm_fallback: bool` · `tokens_in: int` · `tokens_out: int` | ReportService.write → ReviewService.write_report → write_report 응답 · report 메시지 | report |
+| `ReportResult` | `grade: GradeLevel` · `signal_count: int` · `unknown_count: int` · `corrections: int` · `rule_version: str` · `revision_no: int` · `revision_reason: str?` + 내부 `llm_fallback: bool` · `tokens_in: int` · `tokens_out: int` | ReportService.write → ReviewService.write_report → write_report 응답 · report 메시지 | report |
 | `ReviewFacts` | `stated: {price_manwon?, other_tenants_manwon?, vacant_rooms?}` · `answers: dict[QuestionKind, str]` · `price: PriceLookup?` · `building: BuildingLedger?` · `defaulter: DefaulterMatch?` · `failures: dict[ToolName, str]` · `overrides: ValueOverrides?` · `rights: RightsSummary?` · `check: SignalCheck?` · `tried: list[str]` · `untried: list[str]` | `Review.facts`. 루프와 `ReviewService`가 쓰고 `ReviewService`의 입력 채우기가 읽는다. `stated`는 사용자 말과 대조를 통과한 값만(4.2). `tried`는 결과와 상관없이 부른 도구, `untried`는 끝내 시도하지 않은 필수 항목 코드 | review |
 | `RightsInput` | `entries: list[EntryFact]` · `deposit_manwon: int` · `building_type: BuildingType` · `region: str` · `override_price_manwon: int?` · `trade_price_manwon: int?` · `user_price_manwon: int?` · `other_tenants_manwon: int?` · `vacant_rooms: int?` · `amount_overrides: dict[str, int]` · `today: date` | ReviewService.rights_input → RulesService.summarize | rules |
 | `SignalInput` | `entries: list[EntryFact]` · `property: PropertyFact` · `rights: RightsSummary` · `owner_matches_counterparty: bool?` · `proxy_status: ProxyStatus` · `illegal_building: IllegalBuilding` · `owner_type: OwnerType` · `ledger_main_use: str?` · `defaulter_matched: bool?` · `tenants_answered: bool` · `failures: list[str]` · `untried: list[str]` · `today: date` | ReviewService.signal_input → RulesService.check | rules |
@@ -976,28 +976,28 @@ classDiagram
 |---|---|---|---|
 | `create` | [[JSD-API-001#POST/api/reviews]] | [[JSD-UC-001#UC-A1]] · [[JSD-UC-001#UC-A2]] · [[JSD-UC-001#UC-S10]] | missing_input, invalid_file, not_registry, parse_failed, rate_limited |
 | `get` | [[JSD-API-001#GET/api/reviews/{id}]] | [[JSD-UC-001#UC-A1]] | not_found, gone |
-| `cancel` | [[JSD-API-001#DELETE/api/reviews/{id}]] | [[JSD-UC-001#UC-A1]] | not_found |
+| `cancel` | [[JSD-API-001#DELETE/api/reviews/{id}]] | [[JSD-UC-001#UC-A1]] | not_found, gone |
 | `list_messages` | [[JSD-API-001#GET/api/reviews/{id}/messages]] | [[JSD-UC-001#UC-S9]] | not_found, gone |
 | `stream` | [[JSD-API-001#GET/api/reviews/{id}/stream]] | [[JSD-UC-001#UC-S9]] | not_found, gone |
 | `receive` | [[JSD-API-001#POST/api/reviews/{id}/messages]] | [[JSD-UC-001#UC-A3]] | missing_input, invalid_file, not_registry, parse_failed, wrong_state, ask_limit |
-| `override_values` | [[JSD-API-001#PATCH/api/reviews/{id}/values]] | [[JSD-UC-001#UC-A1]] 8a | not_found, wrong_state |
+| `override_values` | [[JSD-API-001#PATCH/api/reviews/{id}/values]] | [[JSD-UC-001#UC-A1]] 8a | not_found, missing_input, wrong_state |
 | `ask` | service_agent · [[JSD-API-002#ask_user]] | [[JSD-UC-001#UC-S7]] · [[JSD-UC-001#UC-A3]] | question_limit |
 | `record` · `owner_matches` · `summarize_and_store` · `check_and_store` · `write_report` · `finish` | service_agent · `override_values` | [[JSD-UC-001#UC-S9]] · [[JSD-UC-001#UC-S8]] | |
 | `require_live` | `main.py`가 검토 경로 라우터에 거는 공통 의존성 (3.1) | — | not_found, gone |
 | `purge_expired` · `warm_samples` · `usage_report` | jobs.py | [[JSD-UC-001#UC-S10]] | |
 
 **규칙이 사는 곳**
-- `create`: 순서가 규칙이다. `upload`와 `sample_id` 중 하나(없거나 둘 다면 missing_input. `sample_id`면 `SampleService.file`) → `gate.check_file` → `gate.take_quota(client_ip, file_sha256, is_sample)` — 예시로 왔거나 예시 파일 해시면 세지 않는다 → `parse_upload`. **여기까지 트랜잭션을 열지 않는다** — 업스테이지 호출(30초·재시도 1회) 동안 DB 연결과 한도 행을 붙들지 않는다 → 짧은 트랜잭션 하나에 `Review` 행과 `RegistryService.create_extract`. 등기부가 아니면(not_registry) 그 트랜잭션을 되돌려 검토가 생기지 않는다. 이미 센 한도는 돌려주지 않는다 — 파싱 비용이 이미 났다(7장). 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 검토·문서가 생기지 않는다. 파일 바이트는 이 메서드가 끝나면 버려진다. 루프는 응답 뒤 라우터가 띄운다
-- `parse_upload`: `gate.cached_html(file_sha256)` → 없으면 `RegistryService.parse` 후 `gate.remember_html`. 트랜잭션 밖에서만 부른다. 돌려준 `billed_pages`(캐시 적중이면 0)를 `parsed_pages`·`cost_krw`에 더한다
+- `create`: 순서가 규칙이다. `upload`와 `sample_id` 중 하나(없거나 둘 다면 missing_input. `sample_id`면 `SampleService.file`) → `gate.check_file` → `gate.take_quota(client_ip, file_sha256, is_sample)` — 예시로 왔거나 예시 파일 해시면 세지 않는다 → `parse_upload`. **여기까지 트랜잭션을 열지 않는다** — 업스테이지 호출(30초·재시도 1회) 동안 DB 연결과 한도 행을 붙들지 않는다 → 짧은 트랜잭션 하나에 `Review` 행과 `RegistryService.create_extract`, 파싱이 캐시에서 온 것이 아니면 같은 트랜잭션에서 `gate.remember_html`. 등기부가 아니면(not_registry) 그 트랜잭션을 되돌려 검토도 캐시도 생기지 않는다. 이미 센 한도는 돌려주지 않는다 — 파싱 비용이 이미 났다(7장). 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 검토·문서가 생기지 않는다. 파일 바이트는 이 메서드가 끝나면 버려진다. 루프는 응답 뒤 라우터가 띄운다
+- `parse_upload`: `gate.cached_html(file_sha256)` → 없으면 `RegistryService.parse`. 캐시에 넣지는 않는다 — 부른 쪽이 `create_extract`가 성공한 트랜잭션에서 `gate.remember_html`을 부른다. 등기부가 아닌 파일의 원문이 어느 검토에도 매이지 않은 채 캐시에 남지 않게 하기 위해서다. 트랜잭션 밖에서만 부른다. 돌려준 `billed_pages`(캐시 적중이면 0)를 `parsed_pages`·`cost_krw`에 더한다
 - `get`: 지역·건물 종류는 `RegistryService.property`, 문서 목록은 `RegistryService.list`, `has_report`는 `ReportService.exists`. `questions_asked`·`asks_used`는 `Question`·`FollowUpTurn` 행 수, `elapsed_sec`는 `finished_at`(없으면 지금) − `created_at`
-- `cancel`: 한 트랜잭션에 `RegistryService.delete_for_review` → 돌려받은 `file_sha256`마다 `gate.forget`(예시 캐시는 남는다) → `CitationService`·`ReportService`의 `delete_for_review` → 자기 행. 원문이 든 파싱 캐시까지 지워야 "즉시 지운다"가 지켜진다([[JSD-API-001#DELETE/api/reviews/{id}]]). `UsageLog`는 남긴다. 도는 루프는 다음 단계 전에 행이 없는 것을 보고 멈춘다
+- `cancel`: 상태가 expired면 지우지 않고 gone이다 — 남긴 행이 410의 근거다. 아니면 한 트랜잭션에 `RegistryService.delete_for_review` → 돌려받은 `file_sha256`마다 `gate.forget`(예시 캐시는 남는다) → `CitationService`·`ReportService`의 `delete_for_review` → 자기 행. 원문이 든 파싱 캐시까지 지워야 "즉시 지운다"가 지켜진다([[JSD-API-001#DELETE/api/reviews/{id}]]). `UsageLog`는 남긴다. 도는 루프는 다음 단계 전에 행이 없는 것을 보고 멈춘다
 - `list_messages`·`stream`: 메시지 행 + `CitationService.for_messages`로 `Message`를 만든다. `stream`은 DB를 짧은 주기로 읽어 `seq`가 커진 메시지를 `message`로, 상태·수치가 바뀌면 `state`로 보낸다. 상태가 done·failed·expired이고 열린 차례가 없고 다 보냈으면 `done`. `delta`는 보내지 않는다(7장)
-- `receive`: kind answer면 `question_id`가 이 검토의 pending 질문이어야 한다(아니면 wrong_state). kind ask면 `ReportService.exists`이고 열린 차례가 없어야 한다(아니면 wrong_state). `LIMITS.asks`가 정해졌고 차례 수가 그 값이거나 `llm_cost_krw ≥ LIMITS.cost_krw`면 ask_limit([[JSD-PRD-001#R10]]). 파일이 있으면 `gate.check_file` → `parse_upload`(트랜잭션 밖) → 짧은 트랜잭션에서 `RegistryService.create_extract`. 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 답·차례·문서가 남지 않는다. 붙은 문서 ID는 answer면 `answer_document_id`, ask면 `FollowUpTurn.document_id`에 적는다. ask면 `FollowUpTurn`을 열고 사용자 말을 role user · kind say로 남긴다(5장 결정 10). 모든 사용자 문장은 `privacy.mask_text`를 거쳐 저장한다
-- `override_values`: 상태 done이고 열린 차례가 없어야 한다. 등기부 읽기·외부 조회 없이 `facts.overrides`를 저장하고 `write_report(revision_reason="직접 입력")` → `ReportService.get`으로 갱신된 의견서를 돌려준다. 합산·신호를 다시 내는 순서는 `write_report` 안에만 있다. 대화에 사용자 말 "직접 입력: …"을 남긴다. 되묻기 차례로 세지 않는다. LLM 비용이 한도에 닿았으면 문장은 템플릿이다(`report_input`의 `use_model`)
-- `ask`: 질문이 `LIMITS.questions`(5)면 question_limit. `Question` 행 + question 메시지 + 상태 waiting_user. 1초마다 행을 다시 읽어 답이 오면 running으로 돌리고 `AskAnswer`를 돌려준다. `LIMITS.answer_timeout_sec`(300)이 지나면 status timeout · answer unknown · notice(answer_timeout). kind가 illegal_building · proxy · owner_type이면 선택지를 [[JSD-PRD-001#R8]] 표의 고정 선택지로 바꿔 내고 답을 열거형 값(`IllegalBuilding` · `ProxyStatus` · `OwnerType`, 모름은 unknown)으로 저장한다 — 등급을 움직이는 이 사실들은 사용자가 고른 답에서만 온다(4.2)
+- `receive`: kind answer면 `question_id`가 이 검토의 pending 질문이어야 한다(아니면 wrong_state). kind ask면 `ReportService.exists`이고 열린 차례가 없어야 한다(아니면 wrong_state). `LIMITS.asks`가 정해졌고 차례 수가 그 값이거나 `llm_cost_krw ≥ LIMITS.cost_krw`면 ask_limit([[JSD-PRD-001#R10]]). 파일이 있으면 `gate.check_file` → `parse_upload`(트랜잭션 밖) → 짧은 트랜잭션에서 `RegistryService.create_extract`와 캐시 넣기(`create`와 같다). 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 답·차례·문서가 남지 않는다. 붙은 문서 ID는 answer면 `answer_document_id`, ask면 `FollowUpTurn.document_id`에 적는다. ask면 `FollowUpTurn`을 열고 사용자 말을 role user · kind say로 남긴다(5장 결정 10). 모든 사용자 문장은 `privacy.mask_text`를 거쳐 저장한다
+- `override_values`: 상태 done이고 열린 차례가 없어야 한다. `entries`의 `entry_id`는 `RegistryService.entries`로 대조하고 이 검토에 없는 ID가 하나라도 있으면 missing_input(field entries)이다. 등기부 읽기·외부 조회 없이 `facts.overrides`를 저장하고 `write_report(revision_reason="직접 입력")` → `ReportService.get`으로 갱신된 의견서를 돌려준다. 합산·신호를 다시 내는 순서는 `write_report` 안에만 있다. 대화에 사용자 말 "직접 입력: …"을 남기고, 새 의견서 카드는 `write_report`가 남긴다. 되묻기 차례로 세지 않는다. LLM 비용이 한도에 닿았으면 문장은 템플릿이다(`report_input`의 `use_model`)
+- `ask`: 질문이 `LIMITS.questions`(5)면 question_limit. `Question` 행 + question 메시지 + 상태 waiting_user. 1초마다 행을 다시 읽어 답이 오면 running으로 돌리고 `AskAnswer`를 돌려준다. 다시 읽을 때 질문 행이 없으면(검토 삭제) 기다리지 않고 not_found를 던진다 — 루프가 조용히 멈춘다(4.2). `LIMITS.answer_timeout_sec`(300)이 지나면 status timeout · answer unknown · notice(answer_timeout). kind가 illegal_building · proxy · owner_type이면 선택지를 [[JSD-PRD-001#R8]] 표의 고정 선택지로 바꿔 내고 답을 열거형 값(`IllegalBuilding` · `ProxyStatus` · `OwnerType`, 모름은 unknown)으로 저장한다 — 등급을 움직이는 이 사실들은 사용자가 고른 답에서만 온다(4.2)
 - `record`: `seq`를 하나 올려 쌓는다. `text`는 가린 뒤 저장한다. `message_id`를 받으면 그 ID로 쌓는다 — 인용이 메시지보다 먼저 만들어지기 때문이다
 - `owner_matches`: `RegistryService.owner`의 이름과 `counterparty_name`의 완전 일치(공백 제거). 어느 쪽이든 없으면 null. read_registry 응답과 `signal_input`이 같이 쓰고, 이름은 `review` 밖으로 나가지 않는다
-- `summarize_and_store` · `check_and_store` · `write_report`: 합산·신호·의견서를 다시 내는 순서는 여기 한 곳이다. `summarize_and_store`는 `rights_input` → `RulesService.summarize` → `facts.rights`, `check_and_store`는 `signal_input` → `RulesService.check` → `facts.check`, `write_report`는 `summarize_and_store` → `check_and_store` → `ReportService.write(report_input)` → 교정 수를 `corrections`에 더한다. 의견서는 늘 마지막 `facts`로 다시 계산한 값을 싣는다. 루프의 summarize_rights · check_signals · write_report와 `override_values`가 이것만 부른다([[JSD-API-002]] 4.2 값 제공)
+- `summarize_and_store` · `check_and_store` · `write_report`: 합산·신호·의견서를 다시 내는 순서는 여기 한 곳이다. `summarize_and_store`는 `rights_input` → `RulesService.summarize` → `facts.rights`, `check_and_store`는 `summarize_and_store`를 먼저 부른 뒤 `signal_input` → `RulesService.check` → `facts.check` — 합산 전이거나 합산 뒤 시세·조회 결과가 바뀌었어도 신호가 옛 합산에 기대지 않는다. `write_report`는 `check_and_store`(합산 포함) → `ReportService.write(report_input)` → 교정 수를 `corrections`에, `ReportResult`의 문장 생성 토큰을 `infra.openai.usage_krw`로 바꿔 `cost_krw`·`llm_cost_krw`에 더한다 → report 메시지(data: grade · signal_count · unknown_count · rule_version · revision_no · revision_reason)를 남긴다. 카드를 여기서 남겨야 루프를 지나지 않는 `override_values`에도 새 카드가 뜬다. 의견서는 늘 마지막 `facts`로 다시 계산한 값을 싣는다. 루프의 summarize_rights · check_signals · write_report와 `override_values`가 이것만 부른다([[JSD-API-002]] 4.2 값 제공)
 - `rights_input`·`signal_input`·`report_input`: 도구 인자로 받지 않는 세션 정보를 채우는 곳이 여기 하나다([[JSD-API-002]] 1.2). 등기 항목은 `RegistryService.entries`, 주택은 `RegistryService.property`, 조회 결과·답변·대조를 통과한 말한 값·직접 입력은 `facts`. `rules`에는 `EntryFact`·`PropertyFact`로 옮겨 넘기고 권리자는 `privacy`로 가린 값이다. 가격 후보는 셋을 따로 넘긴다 — `override_price_manwon`(직접 입력) · `trade_price_manwon` · `user_price_manwon`(대화에서 말한 값). 고르는 순서는 `rules`가 정한다. 대리·위반건축물·임대인 유형은 그 종류 질문의 답만 쓰고 없으면 unknown이다. `report_input`의 항목은 이름을 가린 사본이고, `use_model`은 `llm_cost_krw < LIMITS.cost_krw`일 때만 true다([[JSD-PRD-001#R10]])
 - `finish`: 상태와 `finished_at`을 쓰고 `UsageLog`를 갱신한다(`corrections` 포함). 되묻기 차례가 끝날 때도 부른다(상태는 done 그대로)
 - `require_live`: 행이 없으면 not_found, 상태 expired면 gone. `/api/reviews/{id}/…` 경로에만 걸린다 — 공유본 보기는 검토를 보지 않는다(5장 결정 7)
@@ -1023,6 +1023,7 @@ run_review(review_id: str, model: AgentModel) -> None
         남은 수를 넘는 call은 부르지 않고 force_report(tool_limit). 한 차례에 여럿이 와도 20회를 넘지 않는다
       write_report가 ok면 끝
     ReviewService.finish(done). 예상 밖 예외는 error 메시지 + finish(failed)
+    예외가 나면 먼저 review 행을 다시 읽는다. 없으면(삭제) 아무것도 쓰지 않고 멈춘다 — 외래키 위반·not_found가 여기로 온다
 
 run_follow_up(review_id: str, turn_id: int, model: AgentModel) -> None
     API-002 4.2. 허용 도구 get_criteria · summarize_rights · check_signals · write_report · lookup_price
@@ -1037,6 +1038,7 @@ run_follow_up(review_id: str, turn_id: int, model: AgentModel) -> None
       남은 = 0이면 부르지 않는다 → turn.text가 있으면 say → notice(tool_limit) → 끝
       앞에서부터 남은 수만큼 dispatch. 넘는 call은 부르지 않고 봉투(ok false · error tool_limit)만 history에
     FollowUpTurn.status done → ReviewService.finish(done)
+    예외 처리는 run_review와 같다. review 행이 없으면 아무것도 쓰지 않고 멈춘다
 
 dispatch(state: LoopState, call: ToolCall) -> ToolResult
     목록 밖 이름 · 이 단계에서 허용 안 된 이름 → unknown_tool, strikes += 1
@@ -1054,7 +1056,7 @@ dispatch(state: LoopState, call: ToolCall) -> ToolResult
     get_criteria      RulesService.criteria(LIMITS, topic, signal_code)
     write_report      검토 단계의 첫 호출이면 RulesService.required_steps(building_type)의 항목 중 STEP_TOOLS로 보아 facts.tried에 시도가 없는 것이 있는지
                         있으면 required_unchecked를 한 번 돌려준다. 두 번째 호출이면 남은 항목을 facts.untried에 두고 넘어간다 — 확인 못 함이 된다(UC-S9 4a1)
-                      ReviewService.write_report(review_id, agent_notes, revision_reason) → report 메시지
+                      ReviewService.write_report(review_id, agent_notes, revision_reason). report 메시지는 write_report가 남긴다
     AppError(code) → ok false · error code. 조회 실패 코드는 facts.failures에. 그 밖의 예외 → tool_failed. 어느 쪽이든 루프는 계속
     부른 도구는 결과와 상관없이 facts.tried에 — ask_user는 kind까지(ask_user:tenants), read_registry는 문서 종류까지(read_registry:land)
       required_unchecked는 "시도하지 않음"이다(API-002 2장). 실패한 조회를 다시 부르게 하지 않는다
@@ -1307,7 +1309,7 @@ classDiagram
 - `price`: 건물 종류로 국토부 실거래가 API를 고른다 — 아파트 · 연립다세대 · 오피스텔 · 단독다가구. 최근 12개월을 달마다 조회하고 캐시 키는 HMAC(trade, 지역 코드, 연월)이다. 같은 단지(건물명)·유사 면적 매매의 평균과 건수·기간을 낸다. 없으면 no_trades. `source`는 trade_api 하나뿐이고 다음 순서는 `rules`가 정한다
 - `building`: 건축HUB 표제부를 법정동코드·번·지로 조회한다. 캐시 키는 HMAC(building, 법정동코드, 번, 지)이고 캐시에는 대지위치·도로명주소를 뺀 응답을 둔다. 동이 여럿이면 `multiple_candidates`. 위반건축물 여부는 돌려주지 않는다(API에 없음)
 - `defaulter`: 스냅샷이 비었으면 no_snapshot, 이름이 없으면 no_name. 공백을 뺀 완전 일치. 결과에 이름·공개 항목을 싣지 않는다
-- `refresh_defaulters`: 포트로 명단을 끝까지 다 읽은 뒤에만 한 트랜잭션으로 교체한다. 중간에 실패하면 마지막 스냅샷을 그대로 둔다([[JSD-INFRA-001]] 7장)
+- `refresh_defaulters`: 포트로 명단을 끝까지 다 읽은 뒤에만 한 트랜잭션으로 교체한다. 중간에 실패하거나 0건이면 마지막 스냅샷을 그대로 두고 실패로 남긴다 — 페이지 구조가 바뀌면 예외 없이 0건이 오기 쉽다([[JSD-INFRA-001]] 7장)
 - `region_code`: `RegionCode.name`과 지번 주소 앞부분의 가장 긴 일치. 없으면 no_region_code
 - 바깥 호출은 어댑터 안에서 5초 타임아웃·재시도 1회다([[JSD-PRD-001#R7]] · [[JSD-INFRA-001#C5]]). 실패는 `AppError(api_failed)`로 올라온다
 
@@ -1401,7 +1403,7 @@ classDiagram
 | `delete_for_review` | ReviewService.cancel · purge_expired | [[JSD-UC-001#UC-A1]] | |
 
 **규칙이 사는 곳**
-- `write`: 순서가 규칙이다. 등급·신호·합산·확인한 것은 `inp`에서 옮기고 여기서 계산하지 않는다 → 할 일을 `catalog.py`에서 건물 종류·신호·확인 못 함으로 고른다(확인 못 함에서 온 것이 단계 맨 위) → 특약은 표준계약서 1·2 항상, 3은 다가구 또는 체납 미확인, 나머지는 신호별이고 빈칸은 금액·날짜·법인 권리자명으로 채운다([[JSD-UC-001#UC-S8]] 2) → 포트로 결론 한 문장·신호별 설명·물어볼 것 3~5개를 받는다(`inp.use_model`이 false면 부르지 않고, 실패하면 재시도 1회 뒤 `template_sentences`. 어느 쪽이든 `llm_fallback` true) → 문장마다 `factcheck.contradicts`, 다르면 템플릿 문장으로 바꾸고 `corrections`를 올린다 → `CitationService.clear_report`로 이전 의견서의 인용을 지운다 → 결론의 표식은 `resolve_markers`, 합산·신호·확인한 것·특약은 `cite`로 새로 만든다 → `Opinion`을 덮고 `revision_no`를 올린다. 고지 문구는 고정이다
+- `write`: 순서가 규칙이다. 등급·신호·합산·확인한 것은 `inp`에서 옮기고 여기서 계산하지 않는다 → 할 일을 `catalog.py`에서 건물 종류·신호·확인 못 함으로 고른다(확인 못 함에서 온 것이 단계 맨 위) → 특약은 표준계약서 1·2 항상, 3은 다가구 또는 체납 미확인, 나머지는 신호별이고 빈칸은 금액·날짜·법인 권리자명으로 채운다([[JSD-UC-001#UC-S8]] 2) → 포트로 결론 한 문장·신호별 설명·물어볼 것 3~5개를 받는다(`inp.use_model`이 false면 부르지 않고, 실패하면 재시도 1회 뒤 `template_sentences`. 어느 쪽이든 `llm_fallback` true) → 문장마다 `factcheck.contradicts`, 다르면 템플릿 문장으로 바꾸고 `corrections`를 올린다 → `CitationService.clear_report`로 이전 의견서의 인용을 지운다 → 결론의 표식은 `resolve_markers`, 합산·신호·확인한 것·특약은 `cite`로 새로 만든다 → `Opinion`을 덮고 `revision_no`를 올린다. 고지 문구는 고정이다. 문장 생성·후검증까지는 트랜잭션 밖이고, `clear_report`부터 `Opinion` 덮기까지는 한 트랜잭션이다 — 중간에 실패해도 이전 판이 인용을 잃지 않는다. `ReportResult`에 새 `revision_no`·`revision_reason`을 싣는다
 - `write`가 모델에 주는 것은 `SentenceRequest`뿐이고 돌려주는 것은 `ReportResult`뿐이다. 의견서 전문은 모델에 가지 않는다([[JSD-API-002#write_report]])
 - `get`: `body` + `CitationService.for_report`. 없으면 not_found(아직 나오지 않음)
 - `shareable`: `body`에서 인용·특약·물어볼 것을 뺀 `Report`와 `subject`. `body`에는 처음부터 개인 이름이 없다 — `ReportInput`의 항목이 가려져 들어오고 문장 생성은 가린 값만 받는다. 이 도메인은 이름 목록을 모르므로 문장은 `privacy.mask_text(text, names=[])`로 주민번호 형태 숫자와 번지·동호수만 한 번 더 지운다
