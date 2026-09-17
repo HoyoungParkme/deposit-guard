@@ -125,6 +125,7 @@ erDiagram
         boolean separate_land_registry
         float8 exclusive_area_m2
         text building_name
+        jsonb warnings
         boolean read_by_agent
         timestamptz created_at
     }
@@ -347,6 +348,7 @@ erDiagram
 | separate_land_registry | boolean | null 허용 | 토지 별도등기. 토지 등기부는 null | |
 | exclusive_area_m2 | float8 | null 허용 | 전용면적(㎡) | `59.8` |
 | building_name | text | null 허용 | 건물명 | |
+| warnings | jsonb | not null, default `[]` | 표 읽기에서 못 읽은 필드를 적은 문장 배열. 이름 없이 `entry_id`와 필드 이름만 | `["eul-3 채권최고액을 읽지 못함"]` |
 | read_by_agent | boolean | not null, default false | 에이전트가 읽었는지. `RegistryService.read`가 true로 | |
 | created_at | timestamptz | not null, default now() | 올린 시각. 등기부 순서의 기준(4장 3) | |
 
