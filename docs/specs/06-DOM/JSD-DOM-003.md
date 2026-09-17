@@ -220,11 +220,11 @@ erDiagram
 ```
 
 **설계 규칙**
-- **선은 DB 외래키만 긋는다.** `review_records`·`questions`·`follow_up_turns`·`registry_extracts`·`citations`·`opinions`는 `reviews.id`에 외래키를 건다 — 코드 도메인이 달라도(`registry_extracts`·`citations`·`opinions`). `registry_entries`는 `registry_extracts`를 거쳐 검토에 딸린다. 클래스 명세는 "도메인을 넘는 관계는 ID 열로만"이라 적었으므로 이 셋은 확인 필요다(4장 1 · 5장)
+- **선은 DB 외래키만 긋는다.** `review_records`·`questions`·`follow_up_turns`·`registry_extracts`·`citations`·`opinions`는 `reviews.id`에 외래키를 건다 — 코드 도메인이 달라도(`registry_extracts`·`citations`·`opinions`). `registry_entries`는 `registry_extracts`를 거쳐 검토에 딸린다. 클래스 명세 5장 결정 11이 이 예외를 적었다(4장 1)
 - **삭제는 서비스가 명시적으로 한다.** `ReviewService.cancel`은 한 트랜잭션에 등기부 → 파싱 캐시(`gate.forget`) → 인용·의견서 → 자기 행 순서로 지우고, `purge_expired`는 같은 자식 행을 지우되 `reviews` 행은 `counterparty_name`을 null, `facts`를 `{}`로 비워 status expired로 남긴다(410 답). `ON DELETE CASCADE`는 그 행을 지우는 다른 길(만료 행 삭제, 수동 삭제)에서 개인정보가 고아로 남지 않게 하는 그물이다
 - **외래키가 아닌 ID 열** — `usage_logs.review_id`(검토가 지워져도 남는다), `questions.answer_document_id`·`follow_up_turns.document_id`·`citations.document_id`·`entry_ids`·`block_ids`(다른 도메인 `registry`의 값 — 클래스 명세가 외래키가 아니라고 적었다), `citations.ref`(메시지 행보다 먼저 쌓이고 message가 아니면 메시지 ID가 아니다), `registry_entries.cancelled_by_entry_id`(클래스 명세에 관계가 없다 — 말소 행이 뒤에 오므로 걸려면 DEFERRABLE이어야 한다), `file_caches.file_sha256`(여러 검토가 같은 파일을 쓴다)
 - **보관** — 검토에 딸린 7테이블(`review_records` `questions` `follow_up_turns` `registry_extracts` `registry_entries` `citations` `opinions`)은 `reviews.created_at` + 24시간에 지운다. `shared_opinions`는 7일 뒤 `report`·`subject`만 비운다. `file_caches`는 24시간(예시는 `expires_at` null로 영구), `lookup_caches`는 24시간, `ip_quotas`는 어제 이전 행을 지운다. `defaulter_records`는 최신 스냅샷 하나, `region_codes`·`usage_logs`는 기한 없음([[JSD-DOM-002]] 5장 결정 4 · [[JSD-INFRA-001]] 6장)
-- **개인정보 컬럼** — `reviews.counterparty_name`, `registry_extracts.html`·`lot_address`, `registry_entries.holder`, `file_caches.html`, `lookup_caches.key`(건축물대장 조회의 번·지), `defaulter_records.name`·`age`·`address`(공개 명단), `ip_quotas.ip_hash`(가명). DD의 의미 칸에 **개인정보**로 표시한다. 사용자 문장이 들어가는 `reviews.facts`·`review_records.text`·`questions.answer`는 `privacy.mask_text`로 가린 사본이라 표시하지 않는다
+- **개인정보 컬럼** — `reviews.counterparty_name`, `registry_extracts.html`·`lot_address`, `registry_entries.holder`, `file_caches.html`, `defaulter_records.name`·`age`·`address`(공개 명단), `ip_quotas.ip_hash`(가명). DD의 의미 칸에 **개인정보**로 표시한다. 사용자 문장이 들어가는 `reviews.facts`·`review_records.text`·`questions.answer`는 `privacy.mask_text`로 가린 사본이라 표시하지 않는다
 - 카운터는 전부 `int not null default 0`. 금액은 만원 단위 정수([[JSD-API-001]] 1장)
 
 ---
@@ -403,10 +403,10 @@ erDiagram
 |---|---|---|---|---|
 | id | int | PK, identity | | |
 | review_id | uuid | FK not null → reviews on delete cascade, UK | 검토 하나에 하나. 다시 쓰면 같은 행을 덮는다 | |
-| body | jsonb | not null | 인용을 뺀 `Report` 전체. 클래스 명세상 개인 이름이 없다(INFRA 6장과 어긋남 — 5장) | |
+| body | jsonb | not null | 인용을 뺀 `Report` 전체. 개인 이름이 없다(개인 권리자는 개인 A) | |
 | subject | jsonb | not null | 공유본용 요약 `{region_short, building_type, deposit_manwon, contract_type, reviewed_at}` | |
 | revision_no | int | not null, default 1 | 판. 다시 쓸 때마다 1 올린다 | `2` |
-| revision_reason | text | null 허용 | 다시 쓴 이유. 첫 판은 null | `직접 입력` |
+| revision_reason | text | null 허용 | 다시 쓴 이유. 이름을 가린 한 줄. 첫 판은 null | `직접 입력` |
 | written_at | timestamptz | not null, default now() | 마지막으로 쓴 시각 | |
 
 ### shared_opinions
@@ -454,8 +454,8 @@ erDiagram
 |---|---|---|---|---|
 | id | int | PK, identity | | |
 | kind | text | not null, CHECK (trade, building) | LookupKind | `trade` |
-| key | text | not null, UK | 종류·법정동코드·조회 인자를 이은 문자열. kind가 앞에 들어 있어 단독 UK. 건축물대장이면 번·지가 들어가 `lot_address`와 같은 정보 — **개인정보**. 검토를 지워도 24시간 남는다(5장) | |
-| payload | jsonb | not null | 공공 API 응답 | |
+| key | text | not null, UK | 종류·법정동코드·조회 인자를 이은 문자열을 앱 비밀키로 HMAC한 16진수. kind가 해시 입력에 들어 있어 단독 UK. 번·지 원문은 어디에도 없다([[JSD-DOM-002]] 5장 결정 12) | |
+| payload | jsonb | not null | 공공 API 응답 중 판정에 쓰는 필드. 건축물대장의 대지위치·도로명주소는 뺀다 | |
 | fetched_at | timestamptz | not null, default now() | 받은 시각 | |
 | expires_at | timestamptz | not null | `fetched_at` + 24시간 | |
 
@@ -520,7 +520,7 @@ PK·UK는 인덱스를 만든다(아래 표에 조회와 함께 적는다). 외�
 
 ## 4. 판단이 필요한 지점
 
-**1. 다른 코드 도메인의 테이블도 `reviews`에 외래키를 거나 — 결정: 건다, on delete cascade. 클래스 명세 확인 필요(5장).** `registry_extracts`·`citations`·`opinions`는 검토보다 오래 살 이유가 없고, 클래스 명세의 삭제 순서(등기부 → 인용·의견서 → 자기 행)와 `purge_expired`(자식만 지우고 검토 행은 남김)를 둘 다 막지 않는다. 그러나 클래스 명세는 도메인을 넘는 관계를 ID 열로만 잇고 다른 도메인의 값은 외래키가 아니라고 적었다. 등기부를 가리키는 `document_id`·`entry_ids`·`block_ids`는 그 규칙대로 걸지 않는다. `citations.ref`는 인용이 메시지보다 먼저 쌓여 걸 수 없다.
+**1. 다른 코드 도메인의 테이블도 `reviews`에 외래키를 거나 — 결정: 건다, on delete cascade. 클래스 명세 5장 결정 11에 적었다(2026-09-17).** `registry_extracts`·`citations`·`opinions`는 검토보다 오래 살 이유가 없고, 클래스 명세의 삭제 순서(등기부 → 인용·의견서 → 자기 행)와 `purge_expired`(자식만 지우고 검토 행은 남김)를 둘 다 막지 않는다. 클래스 명세의 "도메인을 넘는 관계는 ID 열로만"은 코드와 다이어그램의 규칙이고 `review_id`는 DB에서 예외다. 등기부를 가리키는 `document_id`·`entry_ids`·`block_ids`는 그 규칙대로 걸지 않는다. `citations.ref`는 인용이 메시지보다 먼저 쌓여 걸 수 없다.
 
 **2. `seq`를 누가 올리나.** `record`는 max+1인데 루프와 `receive`(HTTP)가 동시에 메시지를 쌓을 수 있다. `(review_id, seq)` unique가 중복을 막아 둘째 삽입이 실패한다. 실패 뒤 다시 시도할지, 검토 행을 잠글지는 클래스 명세가 정한다(5장).
 
@@ -537,15 +537,15 @@ PK·UK는 인덱스를 만든다(아래 표에 조회와 함께 적는다). 외�
 - [ ] [[JSD-DOM-002]] 되먹임 — 속성의 null 허용·기본값이 다이어그램에 없어 이 문서가 정했다(카운터 0, status 첫 값, `facts` `{}`, `revision_no` 1, `read_by_agent`·`cancelled` false). 맞는지
 - [ ] [[JSD-DOM-002]] 되먹임 — 0장 전제의 UUID 목록에 `question_id`가 없다. 바깥에 보이는 ID라 uuid로 두었다
 - [ ] [[JSD-DOM-002]] 되먹임 — 인용: 합산(rights)·특약(clause) 인용은 저장되지만 `RightsSummary`·`SpecialClause` DTO에 인용 필드가 없어 역방향 조회로만 보인다. `cite`가 등기부마다 인용을 나누는지 적혀 있지 않은데 한 행은 `document_id` 하나다(합산은 건물·토지 등기부에 걸친다). 같은 신호 코드가 둘이면 `ref`로 구분되지 않는다. 그래서 `citations`에 unique를 두지 않았다
-- [ ] [[JSD-DOM-002]] 되먹임 — 2장 머리·Citation 설명의 "도메인을 넘으면 ID 열로만, 외래키 아님"을 `review_id`에도 적용하나. 이 문서는 `registry_extracts`·`citations`·`opinions.review_id`를 on delete cascade 외래키로 두었다(4장 1)
+- [x] [[JSD-DOM-002]] 되먹임 — 결정(2026-09-17): 외래키를 건다. 클래스 명세 5장 결정 11. 질문은 2장 머리·Citation 설명의 "도메인을 넘으면 ID 열로만, 외래키 아님"을 `review_id`에도 적용하나였다. 이 문서는 `registry_extracts`·`citations`·`opinions.review_id`를 on delete cascade 외래키로 두었다(4장 1)
 - [ ] [[JSD-DOM-002]] 되먹임 — `seq` 동시 삽입(4장 2), 등기 항목 순서(4장 3), 열린 차례 하나(4장 5)를 클래스 명세에 적을지
 - [ ] [[JSD-DOM-002]] 되먹임 — `UsageLog`에 만든 날짜가 없어 `usage_report(day)`가 `updated_at`을 쓴다. 되묻기 차례가 다음 날 끝나면 그 검토가 날짜를 옮긴다. `llm_cost_krw`도 없다
 - [ ] [[JSD-DOM-002]] 되먹임 — 예시 파일을 직접 올린 경우(해시 일치) `usage_logs.is_sample`을 무엇으로 채울지. `reviews`에는 `sample_id`만 있다
 - [ ] 만료(expired) `reviews` 행과 비운 `shared_opinions` 행을 언제 지울지 — [[JSD-DOM-002]] 미결과 같다
 - [ ] [[JSD-INFRA-001]] 되먹임 — 6장 테이블 이름을 이 문서 이름으로: `review_sessions` → reviews, `review_events` → review_records, `review_documents` → registry_extracts·registry_entries, `reports` → opinions, `shares` → shared_opinions, `file_cache` → file_caches, `lookup_cache` → lookup_caches, `hug_defaulters` → defaulter_records, `usage_log` → usage_logs. 백업 규칙에 `ip_quotas`(기한 있음 — 데이터를 뺄지)와 `region_codes`(기한 없음 — 데이터째 담을지)가 없다
 - [ ] [[JSD-INFRA-001]] 되먹임 — 백업이 `reviews` 데이터를 빼면 복구한 DB는 만료 검토에 410이 아니라 404를 답한다
-- [ ] [[JSD-INFRA-001]] 되먹임 — 6장은 의견서 JSON에 이름·상세주소가 있다고 적었고 [[JSD-DOM-002]]는 `body`에 개인 이름이 처음부터 없다고 적었다. 어느 쪽인지
-- [ ] [[JSD-DOM-002]] 되먹임 — `LookupCache`는 개인정보가 없다고 적었지만 건축물대장 `key`에 법정동코드·번·지가 들어가 `lot_address`와 같은 정보다. 이 문서는 개인정보로 표시했다. 검토를 지워도 24시간 남아 [[JSD-API-001]] DELETE의 "즉시 지운다"에 들지 않는다 — 키를 HMAC으로 둘지, 검토 삭제 때 지울지
+- [x] [[JSD-INFRA-001]] 되먹임 — 결정(2026-09-17): 의견서에 개인 이름이 없다. INFRA 6장을 고쳤다. 질문은 6장이 의견서 JSON에 이름·상세주소가 있다고 적었고 [[JSD-DOM-002]]는 `body`에 개인 이름이 처음부터 없다고 적었다. 어느 쪽인지
+- [x] [[JSD-DOM-002]] 되먹임 — 결정(2026-09-17): 키를 HMAC으로 두고 응답에서 주소 필드를 뺀다. 클래스 명세 5장 결정 12. 질문은 `LookupCache`는 개인정보가 없다고 적었지만 건축물대장 `key`에 법정동코드·번·지가 들어가 `lot_address`와 같은 정보다. 이 문서는 개인정보로 표시했다. 검토를 지워도 24시간 남아 [[JSD-API-001]] DELETE의 "즉시 지운다"에 들지 않는다 — 키를 HMAC으로 둘지, 검토 삭제 때 지울지
 - [ ] 법정동 가장 긴 일치에 `is_active`를 거를지, 행을 메모리에 올릴지
 - [ ] HUG 명단 페이지의 실제 열 — `defaulter_records` 컬럼은 잠정이다
 - [ ] 재시작 때 running·waiting_user로 남은 검토를 failed로 닫는다면 `reviews(status)` 인덱스가 필요한지 — 지금은 두지 않았다
