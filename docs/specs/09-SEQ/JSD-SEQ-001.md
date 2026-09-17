@@ -143,8 +143,6 @@ sequenceDiagram
         RS->>UP: parse(data, media_type) 30초, 재시도 1회
         UP-->>RS: ParsedDocument 또는 parse_failed
         RS-->>RV: ParsedDocument
-        RV->>GT: remember_html(file_sha256, html, page_count, is_sample)
-        GT->>DB: file_caches upsert
     end
     rect rgb(238, 238, 238)
         RV->>DB: reviews insert (status created, parsed_pages, cost_krw)
@@ -152,10 +150,14 @@ sequenceDiagram
         RS->>RS: service_parse.read_extract(html)
         alt 갑구와 을구가 둘 다 없음
             RS-->>RV: AppError not_registry
-            RV->>DB: rollback. 검토가 생기지 않는다
+            RV->>DB: rollback. 검토도 캐시도 생기지 않는다
         else 등기부
             RS->>DB: registry_extracts · registry_entries insert
             RS-->>RV: DocumentBrief
+            opt 파싱이 캐시에서 오지 않음
+                RV->>GT: remember_html(file_sha256, html, page_count, is_sample)
+                GT->>DB: file_caches upsert
+            end
             RV->>DB: commit
         end
     end
@@ -167,9 +169,9 @@ sequenceDiagram
 **읽을 때 볼 것**
 - 순서가 규칙이다. 파일 검사 → 한도 → 파싱 → 트랜잭션 하나. 업스테이지를 기다리는 30초 동안 DB 연결과 한도 행을 붙들지 않는다
 - 한도는 파싱 전에 센다. 등기부가 아닌 파일도 한 건으로 센다 — 파싱 비용이 이미 났다(클래스 명세 7장 미결)
-- **파싱 캐시에 넣는 것(단계 19)이 등기부 판정(단계 23)보다 앞이다.** 등기부가 아닌 파일의 HTML도 24시간 캐시에 남고, 어느 검토에도 매이지 않아 삭제로 지울 수 없다 → 2장 #1
+- 파싱 캐시에 넣는 것은 등기부 판정을 통과한 같은 트랜잭션 안이다. 등기부가 아닌 파일의 원문은 캐시에 남지 않는다 — 남으면 어느 검토에도 매이지 않아 삭제로 지울 수 없다(2장 #1)
 - 파일 바이트는 `create`가 끝나면 버려진다. 루프는 응답 뒤에 뜨고 저장된 등기부만 읽는다(클래스 명세 5장 결정 1·6)
-- 예시 파일 해시를 한도에서 빼는 것은 `file_caches.is_sample` 행에 기댄다. 배포 뒤 [[#SEQ-18]]이 돌지 않았으면 예시 파일을 직접 올린 요청이 한도에 세어진다 → 2장 #14
+- 예시 파일 해시를 한도에서 빼는 것은 `file_caches.is_sample` 행에 기댄다. 그래서 [[#SEQ-18]]은 배포 절차의 필수 단계다([[JSD-INFRA-001]] 8장 · 2장 #14)
 
 ---
 
@@ -226,14 +228,19 @@ sequenceDiagram
     AG->>RV: finish(review_id, done)
     RV->>DB: reviews status · finished_at, usage_logs upsert
     opt 예상 밖 예외
-        AG->>RV: record(system, error) · finish(review_id, failed)
+        AG->>DB: reviews 행 다시 읽기
+        alt 행이 없음 (삭제됨)
+            AG->>AG: 아무것도 쓰지 않고 멈춘다
+        else 있음
+            AG->>RV: record(system, error) · finish(review_id, failed)
+        end
     end
 ```
 
 **읽을 때 볼 것**
 - 한도 검사는 모델을 부르기 **전**이다. 20회에 닿은 뒤의 `write_report`는 세지 않는다 — 그때까지의 결과로 의견서를 내는 호출이다([[JSD-PRD-001#R10]])
 - 루프 상태(단계·strikes·history)는 메모리에만 있다. 프로세스가 죽으면 도는 루프가 사라지고 검토는 running으로 남는다(클래스 명세 7장 미결)
-- **삭제 확인은 한 바퀴에 한 번이다(단계 4).** 그 뒤 같은 바퀴 안에서 검토가 지워지면, 도구가 `facts`를 쓰거나 `record`가 대화를 쌓을 때 외래키 위반이 난다. 그 예외가 "예상 밖 예외" 줄로 가면 없는 검토에 error 메시지와 `finish`를 또 쓰려 한다 → 2장 #3
+- 삭제 확인은 한 바퀴에 한 번이다(단계 4). 그 뒤 같은 바퀴 안에서 검토가 지워지면 도구의 쓰기가 외래키 위반이 된다. 예외가 나면 행을 다시 읽어, 없으면 error 메시지도 `finish`도 쓰지 않고 멈춘다(2장 #3)
 - 도구 카드(`kind: tool`)는 루프가 남기고, 숫자 카드·의견서 카드는 각 도구가 남긴다(SEQ-5·8)
 
 ---
@@ -365,6 +372,7 @@ sequenceDiagram
     AG->>RV: record(agent, numbers, RightsSummary)
     AG->>AG: dispatch(check_signals) 인자 없음
     AG->>RV: check_and_store(review_id)
+    RV->>RV: summarize_and_store 먼저. 단계 7~13과 같다
     RV->>RV: signal_input. facts.rights · owner_matches · 질문 답의 열거형 · 조회 결과 · untried
     RV->>RU: check(SignalInput)
     RU-->>RV: SignalCheck(grade, signals, checked, unknowns)
@@ -375,7 +383,7 @@ sequenceDiagram
 
 **읽을 때 볼 것**
 - 모델의 사실 인자는 사용자 말과 대조를 통과해야 `facts.stated`에 들어간다. 대리·위반건축물·임대인 유형은 인자로 받지 않고 질문 답에서만 온다([[JSD-PRD-001#R6]])
-- **`check_and_store`는 `facts.rights`를 읽기만 한다(단계 17).** 에이전트가 `summarize_rights`보다 `check_signals`를 먼저 부르면 `SignalInput.rights`가 비고, 합산 뒤에 `lookup_price`가 오면 가격 없는 옛 합산으로 신호를 낸다. 의견서는 `write_report`가 둘 다 다시 돌려 맞지만, 모델이 보는 등급은 틀릴 수 있다 → 2장 #7
+- `check_and_store`는 합산을 먼저 다시 낸다(단계 18). 에이전트가 `check_signals`를 합산보다 먼저 부르거나, 합산 뒤에 시세가 와도 신호가 옛 합산에 기대지 않는다(2장 #7)
 - `rules`는 다른 도메인 타입을 모른다. 옮겨 담기(`rights_input`·`signal_input`)는 `ReviewService` 한 곳이다
 
 ---
@@ -489,6 +497,8 @@ sequenceDiagram
     else 300초가 지남
         RV->>DB: questions timeout, answer unknown · review_records notice answer_timeout · reviews running
         RV-->>AG: AskAnswer(answer unknown)
+    else 질문 행이 없음 (검토 삭제)
+        RV-->>AG: AppError not_found. 루프가 조용히 멈춘다 SEQ-2
     end
     AG->>DB: reviews.facts.answers · tried에 ask_user와 kind
 ```
@@ -497,7 +507,7 @@ sequenceDiagram
 - 답은 HTTP 요청이 저장하고, 기다리던 루프가 행을 다시 읽어 가져간다. 두 흐름은 DB 행으로만 만난다 — 프로세스 안 전달 통로가 없다
 - 등급을 움직이는 질문(위반건축물·대리·임대인 유형)은 선택지를 서버가 고정하고 답을 열거형으로 저장한다(클래스 명세 4.1 `ask`)
 - 파일 답은 요청 안에서 파싱·저장까지 끝난다. 루프는 `AskAnswer.document_id`를 보고 [[#SEQ-4]]로 읽는다. 파일이 거절되면 질문은 pending으로 남는다
-- **기다리는 동안 검토가 지워지면** 질문 행이 사라진다. `ask`는 답이 오지 않은 것으로 보고 300초를 채운 뒤 없는 검토에 notice와 상태를 쓰려 한다 → 2장 #2
+- 기다리는 동안 검토가 지워지면 질문 행이 사라진다. `ask`는 300초를 기다리지 않고 not_found를 던지고, 루프는 아무것도 쓰지 않고 멈춘다(2장 #2)
 
 ---
 
@@ -535,7 +545,7 @@ sequenceDiagram
     opt revision_reason
         RV->>PV: mask_text(revision_reason, 이름)
     end
-    RV->>RV: summarize_and_store → check_and_store (SEQ-5 단계 7~22)
+    RV->>RV: check_and_store. 합산 포함, SEQ-5 단계 17~23
     RV->>RV: report_input. 이름 가린 항목, use_model은 llm_cost_krw가 한도 미만일 때
     RV->>RP: write(review_id, ReportInput, agent_notes, revision_reason)
     RP->>RP: pick_todos · pick_clauses (catalog.py)
@@ -565,19 +575,19 @@ sequenceDiagram
         end
         RP->>DB: opinions upsert, revision_no 1 올림, revision_reason
     end
-    RP-->>RV: ReportResult(grade, signal_count, unknown_count, corrections, rule_version, tokens)
-    RV->>DB: reviews corrections 더하기
+    RP-->>RV: ReportResult(grade, signal_count, unknown_count, corrections, rule_version, revision_no, revision_reason, tokens)
+    RV->>DB: reviews corrections 더하기, 문장 생성 토큰을 원화로 cost_krw · llm_cost_krw에 더하기
+    RV->>RV: record(agent, report, grade · signal_count · unknown_count · rule_version · revision_no · revision_reason)
     RV-->>AG: ReportResult
-    AG->>RV: record(agent, report, grade · signal_count · unknown_count · rule_version)
     AG-->>AG: 봉투 ok. 검토 단계면 루프 끝
 ```
 
 **읽을 때 볼 것**
 - 합산·신호·의견서를 다시 내는 순서는 `ReviewService.write_report` 한 곳이다. 루프의 write_report, 되묻기의 값 제공([[#SEQ-9]]), 직접 입력([[#SEQ-10]])이 모두 여기로 온다
 - 의견서 전문은 모델로 가지 않는다. 모델이 받는 것은 `ReportResult`의 요약뿐이다
-- **문장 생성 비용이 검토 비용에 더해지지 않는다(단계 28).** `ReportResult`에 토큰이 있지만 `write_report` 규칙은 교정 수만 더한다 → 2장 #8
-- **의견서 카드 메시지는 루프 dispatch가 남긴다(단계 30).** 직접 입력은 루프를 지나지 않으므로 카드가 남지 않는다 → 2장 #10. 카드와 `Report`에 판 번호·다시 쓴 이유가 없다([[JSD-API-001]] 4.4) → 2장 #9
-- **rect는 이 문서의 제안이다.** 클래스 명세 4.8은 순서만 적었다. 인용을 지운 뒤 의견서를 덮기 전에 실패하면 이전 판이 인용 없이 남는다 → 2장 #4
+- 문장 생성 비용도 검토 비용에 더한다(단계 28). 건당 비용 300원([[JSD-INFRA-001#C3]])을 에이전트 루프만으로 세지 않는다(2장 #8)
+- 의견서 카드는 `write_report`가 남긴다(단계 29). 루프를 지나지 않는 직접 입력([[#SEQ-10]])에도 새 카드가 뜬다. 카드·`Report`·`ReportResult`에 판 번호와 다시 쓴 이유가 실린다(2장 #9 · #10)
+- 문장 생성·후검증은 트랜잭션 밖이고, 인용 지우기부터 의견서 덮기까지가 트랜잭션 하나다(rect). 중간에 실패해도 이전 판이 인용을 잃지 않는다(2장 #4)
 
 ---
 
@@ -649,7 +659,7 @@ sequenceDiagram
 - 되묻기 차례는 요청이 열고 루프가 닫는다. 열린 차례 하나는 DB의 부분 unique가 막고, 서비스는 그 위반을 wrong_state로 답한다([[JSD-DOM-003]] 4장 5)
 - 허용 도구는 get_criteria · summarize_rights · check_signals · write_report · lookup_price다. 서류로 연 차례만 read_registry가 더해진다. ask_user는 없다
 - 값 제공의 다시 쓰기는 [[#SEQ-8]]을 그대로 탄다. 판 번호가 오르고 다시 쓴 이유가 남는다
-- 검토 스트림은 의견서 뒤 done으로 닫혔다. 화면은 202를 받은 뒤 스트림에 다시 붙어야 이 차례의 말풍선을 받는다 → 2장 #12
+- 검토 스트림은 의견서 뒤 done으로 닫혔다. 화면은 202를 받으면 마지막 말풍선 다음부터 스트림에 다시 붙는다([[JSD-UI-001#UI-2]] 규칙 · 2장 #12)
 
 ---
 
@@ -663,6 +673,7 @@ sequenceDiagram
     actor U as 세입자
     participant WR as review/router.py
     participant RV as ReviewService
+    participant RS as RegistryService
     participant RP as ReportService
     participant DB
 
@@ -671,9 +682,16 @@ sequenceDiagram
     alt 상태가 done이 아니거나 열린 차례가 있음
         RV-->>WR: AppError wrong_state
     end
+    opt entries가 있음
+        RV->>RS: entries(review_id, entry_ids)
+        RS-->>RV: 이 검토에 있는 항목만
+        alt 없는 entry_id가 있음
+            RV-->>WR: AppError missing_input, field entries
+        end
+    end
     RV->>DB: reviews.facts.overrides
     RV->>DB: review_records user say 직접 입력 문장
-    RV->>RV: write_report(review_id, revision_reason 직접 입력) SEQ-8 단계 7~29
+    RV->>RV: write_report(review_id, revision_reason 직접 입력). 새 의견서 카드까지, SEQ-8 단계 7~30
     RV->>RP: get(review_id)
     RP-->>RV: Report
     RV-->>WR: Report
@@ -682,8 +700,8 @@ sequenceDiagram
 
 **읽을 때 볼 것**
 - 등기부 읽기·외부 조회·모델 루프를 지나지 않는다. 되묻기 차례로 세지 않는다
-- **대화에 새 의견서 카드가 남지 않는다.** [[#SEQ-8]]의 카드는 루프 dispatch가 남기기 때문이다. [[JSD-UI-001#UI-2]] 요소 5와 [[JSD-UI-001#UI-3]] 규칙은 새 카드가 뜨고 이전 카드가 흐려진다고 적었다 → 2장 #10
-- **`entries`의 `entry_id`를 대조하지 않는다.** 없는 ID를 보내면 `amount_overrides`에 들어가 조용히 무시된다 → 2장 #11
+- 새 의견서 카드는 `write_report`가 남기므로 대화에 뜨고 이전 카드는 흐려진다([[JSD-UI-001#UI-2]] 요소 5 · [[JSD-UI-001#UI-3]] 규칙 · 2장 #10). 화면은 200을 받은 뒤 스트림에 다시 붙어 카드를 받는다
+- `entries`의 `entry_id`는 이 검토의 등기부와 대조한다. 없는 ID가 조용히 무시되지 않고 400으로 답한다(2장 #11)
 - 상태 검사와 `write_report` 사이에 되묻기 차례가 열릴 수 있다. 둘 다 `facts`를 쓴다 — 드물어 지금은 두지 않는다(3장)
 
 ---
@@ -893,6 +911,8 @@ sequenceDiagram
     WR->>RV: cancel(review_id)
     alt 행 없음
         RV-->>WR: AppError not_found
+    else status expired
+        RV-->>WR: AppError gone. 남긴 행을 지우지 않는다
     end
     rect rgb(238, 238, 238)
         RV->>RS: delete_for_review(review_id)
@@ -919,8 +939,8 @@ sequenceDiagram
 **읽을 때 볼 것**
 - 원문이 든 파싱 캐시까지 지워야 "즉시 지운다"가 지켜진다. 예시 파일 캐시는 남는다
 - 공유본은 지우지 않는다. 이름·원문·인용이 없는 사본이고 자기 기한(7일)을 산다
-- **도는 루프는 다음 바퀴에야 알아챈다.** 그 사이 도구가 쓰는 행은 외래키 위반이 되고, 질문을 기다리던 `ask`는 300초를 채운다 → 2장 #2 · #3
-- **만료된 검토(expired 행)에 DELETE를 보내면** 남겨 둔 행이 지워져 그 뒤로는 410 대신 404를 답한다 → 2장 #5
+- 도는 루프는 다음 바퀴에 알아채거나, 그 사이의 쓰기가 실패한 뒤 행이 없는 것을 보고 멈춘다. 질문을 기다리던 `ask`는 바로 멈춘다(2장 #2 · #3)
+- 만료된 검토에 DELETE를 보내면 410이다. 남긴 행을 지우면 그 뒤로 410 대신 404를 답하게 된다(2장 #5)
 
 ---
 
@@ -989,8 +1009,8 @@ sequenceDiagram
     loop 목록 페이지를 끝까지, cp949
         HG->>HG: 다음 페이지 읽기
     end
-    alt 중간에 실패
-        HG-->>LK: 예외
+    alt 중간에 실패 또는 0건
+        HG-->>LK: 예외 또는 빈 목록
         LK-->>JB: 실패. 마지막 스냅샷을 그대로 둔다
     else 끝까지 읽음
         HG-->>LK: DefaulterRow 목록
@@ -1003,7 +1023,7 @@ sequenceDiagram
 
 **읽을 때 볼 것**
 - 다 읽은 뒤에만 교체한다. 루프의 `match_defaulter`는 교체 중에도 옛 스냅샷이나 새 스냅샷 하나만 본다
-- **예외 없이 0건이 오면 빈 명단으로 교체한다.** 페이지 구조가 바뀌면 흔히 이렇게 된다. 그 뒤 대조는 no_snapshot이 된다 → 2장 #6
+- 0건도 실패로 본다. 페이지 구조가 바뀌면 예외 없이 0건이 오기 쉽고, 그대로 교체하면 대조가 모두 no_snapshot이 된다(2장 #6)
 
 ---
 
@@ -1135,7 +1155,7 @@ sequenceDiagram
 
 ## 2. 되먹일 것
 
-시퀀스를 그려서 드러난 구멍이다. 고칠 문서는 이 문서를 승인하기 전에 반영하고, 반영하면 이 표에 결정을 붙인다.
+시퀀스를 그려서 드러난 구멍이다. **15건 모두 고칠 문서에 반영했고, 위 그림은 반영한 뒤의 흐름이다.** 이 절은 그 문서들이 왜 그렇게 됐는지의 기록이다.
 
 ### 2.1 저장·삭제
 
@@ -1171,7 +1191,7 @@ sequenceDiagram
 
 ## 3. 미결사항
 
-- [ ] 2장 되먹일 것 15건 — 고칠 문서에 반영한 뒤 이 문서를 승인한다
+- [x] 2장 되먹일 것 15건 — 결정: 클래스 명세 · REST API · 화면 설계 · 인프라 · 유스케이스에 반영했다(2026-09-17)
 - [ ] 직접 입력 중 되묻기 차례가 열리는 경합([[#SEQ-10]]) — 둘 다 `facts`를 쓴다. 검토 행 잠금을 둘지
 - [ ] `ask`의 1초 폴링과 스트림의 짧은 주기 폴링이 동시 검토 수만큼 DB를 읽는다 — 심사 기간 규모에서 괜찮은지 첫 구현에서 잰다
 - [ ] 되묻기 서류 추가의 파싱 비용 — IP 한도에 세지 않는다. 되묻기 횟수 한도(`LIMITS.asks`)와 함께 정한다([[JSD-API-002]] 미결)
