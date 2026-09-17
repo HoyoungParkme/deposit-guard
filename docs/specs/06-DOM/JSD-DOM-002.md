@@ -435,6 +435,7 @@ classDiagram
         +bool separate_land_registry
         +float exclusive_area_m2
         +str building_name
+        +list warnings
         +bool read_by_agent
         +datetime created_at
     }
@@ -443,7 +444,7 @@ classDiagram
 관계
 - `RegistryExtract` 1 — * `RegistryEntry`
 
-**API 이름은 document다**(`document_id`). 표제부에서 읽은 주택(`lot_address`부터 `building_name`까지)은 건물 등기부에만 채우고 토지 등기부는 비운다. 소유자는 저장하지 않고 갑구 항목에서 계산한다. `lot_address`는 지번까지이고 동·호수는 읽지 않는다 — 외부 조회에만 쓰고 모델·공유본으로 나가지 않는다. `html`은 문서 패널에 내려가는 원문이다. 블록마다 `data-block-id`가 붙어 있다. `file_sha256`은 파싱 캐시(`FileCache`)를 찾는 열이다 — 검토를 지울 때 그 캐시도 지운다(4.1 `cancel`).
+**API 이름은 document다**(`document_id`). 표제부에서 읽은 주택(`lot_address`부터 `building_name`까지)은 건물 등기부에만 채우고 토지 등기부는 비운다. 소유자는 저장하지 않고 갑구 항목에서 계산한다. `lot_address`는 지번까지이고 동·호수는 읽지 않는다 — 외부 조회에만 쓰고 모델·공유본으로 나가지 않는다. `html`은 문서 패널에 내려가는 원문이다. 블록마다 `data-block-id`가 붙어 있다. `file_sha256`은 파싱 캐시(`FileCache`)를 찾는 열이다 — 검토를 지울 때 그 캐시도 지운다(4.1 `cancel`). `warnings`는 표 읽기에서 못 읽은 필드를 적은 문장 목록이다 — read_registry 응답에 그대로 싣는다. 이름을 넣지 않고 `entry_id`와 필드 이름만 쓴다.
 
 #### RegistryEntry 등기 항목
 
@@ -677,7 +678,7 @@ classDiagram
 | `Health` | `status: str` · `db: str` · `version: str?` | HealthService.check | core |
 | `ToolResult` | `ok: bool` · `data: dict?` · `error: str?` · `summary: str` | 루프 dispatch → 모델 · tool 메시지 | review |
 | `LoopState` | `review_id: str` · `phase: Phase` · `turn_id: int?` · `model: AgentModel` · `history: list[dict]` · `strikes: int` · `required_returned: bool` · `read_ok: bool` · `forced: bool` | 루프 메모리. 저장하지 않는다 | review |
-| `Registry` | `document_id: str` · `doc_kind: DocKind` · `building: Property` · `gap: list[RegistryEntry]` · `eul: list[RegistryEntry]` · `warnings: list[str]` | RegistryService.read → 루프가 `owner_matches_counterparty`를 더하고 가린 뒤 모델 | registry |
+| `Registry` | `document_id: str` · `doc_kind: DocKind` · `building: Property?` · `gap: list[RegistryEntry]` · `eul: list[RegistryEntry]` · `warnings: list[str]` | RegistryService.read → 루프가 `owner_matches_counterparty`를 더하고 가린 뒤 모델 | registry |
 | `Property` | `region: str` · `building_type: BuildingType` · `is_collective: bool` · `land_right_unregistered: bool` · `separate_land_registry: bool` + 내부 `lot_address: str?` · `exclusive_area_m2: float?` · `building_name: str?` | Registry.building · LookupService 인자 · SignalInput · ReportInput | registry |
 | `RegistryEntry` (DTO) | `entry_id: str` · `rank_no: str` · `purpose_code: PurposeCode` · `received_at: date?` · `amount_manwon: int?` · `price_manwon: int?` · `holder: str?` · `holder_is_corporation: bool?` · `cancelled: bool` + 내부 `section: Section` · `parent_entry_id: str?` · `cause: str?` · `cancelled_by_entry_id: str?` | Registry · ReportInput. `rules`에는 `EntryFact`로 옮긴다. ORM은 `RegistryEntryRow` | registry |
 | `PriceLookup` | `price_manwon: int` · `count: int` · `period: str` · `source: PriceSource` · `samples: list[{date, amount_manwon, area_m2}]` | LookupService.price · ReviewFacts | lookup |
@@ -1150,6 +1151,7 @@ classDiagram
         +bool separate_land_registry
         +float exclusive_area_m2
         +str building_name
+        +list warnings
         +bool read_by_agent
         +datetime created_at
     }
@@ -1185,7 +1187,7 @@ classDiagram
 | `list` | [[JSD-API-001#GET/api/reviews/{id}/documents]] · ReviewService.get | [[JSD-UC-001#UC-A1]] | |
 | `get_html` | [[JSD-API-001#GET/api/reviews/{id}/documents/{documentId}]] | [[JSD-UC-001#UC-A1]] | not_found |
 | `parse` | ReviewService (캐시에 없을 때) | [[JSD-UC-001#UC-S1]] 1 | parse_failed |
-| `create_extract` | ReviewService.create · receive | [[JSD-UC-001#UC-S1]] 2~6 | not_registry |
+| `create_extract` | ReviewService.create · receive | [[JSD-UC-001#UC-S1]] 2~6 | not_registry, wrong_state |
 | `property` · `owner` · `holder_names` · `entries` | ReviewService · service_agent | [[JSD-UC-001#UC-S2]] · [[JSD-UC-001#UC-S6]] | |
 | `entries` · `block_excerpt` | CitationService | [[JSD-UC-001#UC-A1]] | |
 | `delete_for_review` | ReviewService.cancel · purge_expired | [[JSD-UC-001#UC-A1]] | |
@@ -1193,8 +1195,8 @@ classDiagram
 **규칙이 사는 곳**
 - `read`: `document_id`가 없으면 `read_by_agent`가 false인 첫 문서를 읽고 true로 바꾼다. 가리지 않은 값을 돌려준다 — 소유자 일치 계산과 가리기는 `review`의 몫이다. 계약 상대방 이름은 이 도메인에 들어오지 않는다
 - `parse`: 포트를 한 번 부른다. 업스테이지 타임아웃 30초·재시도 1회는 어댑터 안이다([[JSD-UC-001#UC-S1]] 1a). 바이트는 메모리에서만 오간다
-- `create_extract`: `service_parse.read_extract(html)` → 갑구·을구가 없으면 not_registry. 이 검토에 이미 등기부가 있으면 `entry_id`에 `land-` 접두어를 붙인다. 한 검토에 두 장까지([[JSD-DOM-001#RegistryExtract]]). `file_sha256`은 행에 남겨 검토를 지울 때 파싱 캐시를 찾는다
-- `owner`: 갑구에서 말소되지 않은 마지막 소유권 항목의 권리자. 공유(여럿)면 첫 이름만 쓰고 경고를 남긴다(도메인 모델 미결사항)
+- `create_extract`: `service_parse.read_extract(html)` → 갑구·을구가 없으면 not_registry. 이 검토에 이미 등기부가 있으면 두 번째는 토지 등기부여야 하고(아니면 wrong_state) `entry_id`에 `land-` 접두어를 붙인다. 한 검토에 두 장까지이고 세 번째는 wrong_state다([[JSD-DOM-001#RegistryExtract]]). `file_sha256`은 행에 남겨 검토를 지울 때 파싱 캐시를 찾는다
+- `owner`: 건물 등기부(토지가 아닌 첫 문서) 갑구에서 말소되지 않은 마지막 소유권 항목의 권리자. 토지 등기부의 소유자는 보지 않는다. 공유(여럿)면 첫 이름만 쓰고 경고를 남긴다(도메인 모델 미결사항)
 - `holder_names`: 이 검토 항목의 권리자 중 법인이 아닌 이름(`holder_is_corporation`이 true가 아닌 것)을 등기부 순서·갑구 → 을구 순서로. 같은 이름도 나온 대로 둔다. 라벨 순서가 여기서 정해진다. 법인명은 가리지 않으므로 싣지 않는다
 - `entries`: 이 검토의 항목만 돌려준다. `entry_ids`가 None이면 전부. 없는 ID는 조용히 빠지고, 대조는 부르는 쪽이 한다
 - `block_excerpt`: 블록이 속한 항목과 원문 한 줄. 어느 항목에도 없는 블록이면 None
