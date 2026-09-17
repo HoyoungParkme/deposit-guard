@@ -44,6 +44,7 @@ Error:
 | `missing_input` | 400 | 파일·보증금 같은 필수 입력이 없음 |
 | `invalid_file` | 400 | 형식·크기·쪽수 초과, 암호 걸린 PDF |
 | `not_registry` | 400 | 등기부가 아닌 문서 |
+| `parse_failed` | 502 | 올린 문서의 파싱이 재시도 뒤에도 실패함 |
 | `rate_limited` | 429 | IP 하루 한도 초과 (예시 파일은 세지 않음) |
 | `not_found` | 404 | 없는 검토·문서·블록·공유 토큰 |
 | `gone` | 410 | 보관 기간이 지나 삭제됨 |
@@ -77,9 +78,10 @@ Error:
         content: { review_id: uuid, status: created, is_sample: bool, expires_at: datetime }
       400: missing_input | invalid_file | not_registry
       429: rate_limited
+      502: parse_failed
 ```
 
-파일 바이트는 디스크에 쓰지 않는다. 응답 직후 대화가 시작되므로 클라이언트는 바로 스트림에 붙는다.
+등기부 파싱은 이 요청 안에서 끝난다(같은 파일이면 파싱 캐시를 쓴다). 파일 바이트는 디스크에 쓰지 않고 요청이 끝나면 버린다. 응답 직후 대화가 시작되므로 클라이언트는 바로 스트림에 붙는다.
 
 #### GET/api/reviews/{id} 검토 상태
 
@@ -111,7 +113,7 @@ Error:
 ```yaml
 /api/reviews/{id}:
   delete:
-    summary: 진행 중이면 멈추고, 원문·대화·의견서를 즉시 지운다
+    summary: 진행 중이면 멈추고, 원문·대화·의견서와 그 파일의 파싱 캐시(예시 파일 제외)를 즉시 지운다
     responses:
       204: {}
       404: not_found
@@ -177,9 +179,10 @@ Error:
         file:        binary                             # 토지 등기부 등 추가 서류
     responses:
       202: { message_id, seq }      # 접수. 결과는 스트림으로 온다
-      400: missing_input | invalid_file
+      400: missing_input | invalid_file | not_registry
       409: wrong_state | question_limit
       429: ask_limit
+      502: parse_failed
 ```
 
 답변과 되묻기를 한 경로로 받는다. 화면에서 둘 다 같은 입력창이기 때문이다. 서버는 `kind`와 `question_id`로 구분한다.
@@ -209,7 +212,7 @@ Error:
     responses:
       200: { content: text/html }
       404: not_found
-      410: gone      # 보관 기간 경과. 화면은 인용 칩을 비활성한다
+      410: gone      # 보관 기간 경과. 원문은 대화·의견서와 함께 사라진다
 ```
 
 #### GET/api/reviews/{id}/blocks/{blockId} 이 줄이 쓰인 곳
