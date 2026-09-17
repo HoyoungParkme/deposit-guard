@@ -1572,9 +1572,9 @@ lookup/ports.py
     LedgerSource.fetch(region_code: str, bun: str, ji: str) -> list[LedgerRow]
     DefaulterSource.fetch_all() -> list[DefaulterRow]
 lookup/adapters/data_go_kr.py
-    TradeSource · LedgerSource 구현. 서비스 키 하나 · 5초 · 재시도 1회. 실패는 api_failed
+    DataGoKrTradeSource · DataGoKrLedgerSource — TradeSource · LedgerSource 구현. 서비스 키 하나 · 5초 · 재시도 1회. 실패는 api_failed
 lookup/adapters/hug.py
-    DefaulterSource 구현. 목록 페이지를 끝까지 넘기며 cp949로 읽는다
+    HugDefaulterSource — DefaulterSource 구현. 목록 페이지를 끝까지 넘기며 cp949로 읽는다
 
 report/ports.py
     SentenceWriter.write(req: SentenceRequest) -> Sentences
