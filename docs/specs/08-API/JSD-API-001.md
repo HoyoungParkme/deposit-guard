@@ -94,7 +94,7 @@ Error:
         content:
           review_id: uuid
           status: { enum: [created, running, waiting_user, done, failed, expired] }
-          subject: { building_type, deposit_manwon, contract_type, region, counterparty_name }
+          subject: { building_type, deposit_manwon, contract_type, region }   # 이름은 싣지 않는다 (1절)
           counters: { tool_calls, questions_asked, asks_used, elapsed_sec, cost_krw }
           pending_question: Question | null
           documents: [{ document_id, kind, label }]
@@ -354,7 +354,7 @@ Error:
       503: { status: degraded, db: fail }
 ```
 
-## 4. 스키마
+## 4. 공통 스키마
 
 ### 4.1 메시지
 
@@ -377,7 +377,7 @@ Message:
 | kind | 누가 | data에 담기는 것 | 화면 |
 |---|---|---|---|
 | `say` | agent | 없음 | 말풍선 |
-| `tool` | agent | `{ tool, status: running|ok|failed, error_code, elapsed_ms, summary, detail }` | 도구 카드 |
+| `tool` | agent | `{ tool, status: running·ok·failed, error_code, elapsed_ms, summary, detail }` | 도구 카드 |
 | `question` | agent | `Question` | 질문 카드 |
 | `answer` | user | `{ question_id, choice, text, document_id }` | 사용자 말풍선 |
 | `numbers` | agent | `RightsSummary` | 숫자 네 칸 |
