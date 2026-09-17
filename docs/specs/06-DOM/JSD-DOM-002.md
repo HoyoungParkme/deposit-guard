@@ -710,6 +710,7 @@ classDiagram
 | `ParsedDocument` | `html: str` · `page_count: int` · `billed_pages: int` | registry 포트 → RegistryService.parse · gate.cached_html(적중이면 `billed_pages` 0). `billed_pages`가 `parsed_pages`에 더해진다 | shared |
 | `ParsedRegistry` | `kind: DocKind` · `property: Property?` · `entries: list[ParsedEntry]` · `panel_html: str` · `warnings: list[str]` | service_parse.read_extract → RegistryService.create_extract | registry |
 | `ParsedEntry` | `RegistryEntry` 필드 전부 + `receipt_no: str?` · `purpose_text: str` · `block_ids: list[str]` · `location_label: str` | ParsedRegistry → RegistryEntry 행 | registry |
+| `Block` | `tag: str` · `block_id: str` · `text: str` + 표면 `header: list[str]` · `rows: list[list[str]]` | service_parse 안에서만. 업스테이지 요소 하나 | registry |
 | `ToolCall` | `id: str` · `name: str` · `arguments: dict` | 모델 포트 → 루프 dispatch | review |
 | `ModelTurn` | `text: str?` · `tool_calls: list[ToolCall]` · `refused: bool` · `tokens_in: int` · `tokens_out: int` | AgentModel.complete → 루프 | review |
 | `SentenceRequest` | `grade: Grade` · `rights: RightsSummary` · `signals: list[RiskSignal]` · `agent_notes: str?` · `revision_reason: str?` | ReportService → SentenceWriter | report |
@@ -1211,18 +1212,39 @@ read_extract(html: str) -> ParsedRegistry
     표를 순서대로 훑어 머리글로 구간을 나눈다 — 표제부 · 갑구 · 을구. 갑구와 을구가 둘 다 없으면 not_registry
     표제부 → Property: 소재지번(동·호수 버림) · 건물 종류 · 집합건물 여부 · 대지권 미등기 · 토지 별도등기 · 전용면적 · 건물명
       건물 종류를 못 정하면 other (UC-S1 5a)
-    갑구·을구의 행 → ParsedEntry: 순위번호 · 등기목적 · 접수 일자와 번호 · 등기원인과 거래가액 · 권리자 · 채권최고액 또는 전세금 · 그 행 요소의 id들
+    갑구·을구의 행 → ParsedEntry: 순위번호 · 등기목적 · 접수 일자와 번호 · 등기원인과 거래가액 · 권리자 · 채권최고액 또는 전세금 · 그 행의 블록 ID
+    블록 ID: 업스테이지 요소 id는 표 하나에 하나다. 행마다 `표id-행번호`(tbody 안 1부터)를 만든다 — 인용이 표 전체가 아니라 한 줄을 강조한다
+    쪽을 넘겨 제목 없이 이어진 표는 바로 앞 구간(갑구·을구)의 표다
     말소: 등기목적이 "N번…말소"인 행 → N번 항목 cancelled = true, cancelled_by_entry_id = 그 행
     부기: 순위번호 N-M → parent_entry_id = N번. 근저당권변경 금액은 부기 항목에 두고 감액 합산은 rules가 한다
     금액 문자열 → 만원 정수. 못 읽은 필드는 null + warnings
-    권리자 성격: 법인 표지(주식회사 · 은행 · 공사 · 조합 …)가 있으면 holder_is_corporation
-    panel_html: 허용 태그만 남기고 요소 id를 data-block-id로 옮긴다
+    권리자 성격: 이름 뒤 등록번호가 `NNNNNN-N****`(법인등록번호 가림)이면 법인, `NNNNNN-*******`(주민번호 가림)이면 개인. 번호가 없으면 법인 표지(주식회사 · 은행 · 금고 · 공사 · 조합 …)로 본다
+    panel_html: 허용 태그만 남기고 요소 id를 data-block-id로 옮긴다. 표의 행에는 `표id-행번호`를 붙인다
+    셀 글자는 비교 전에 공백을 모두 뺀다 — OCR이 "근저당권설 정"처럼 끊는다
 
 purpose_code(text: str) -> PurposeCode
     등기목적 문구 → 코드. 대응표는 이 파일의 상수
 
 won_to_manwon(text: str) -> int?
     금 210,000,000원 → 21000. 만원 미만은 버린다
+
+split_blocks(html: str) -> list[Block]
+    업스테이지 HTML → 요소 목록. 표는 머리글과 행 목록을 갖는다. 표준 라이브러리 html.parser
+
+read_property(blocks: list[Block], kind: DocKind) -> Property?
+    표제부 블록과 첫머리 주소 줄에서 주택 정보. 토지면 None
+
+read_rows(table: Block, section: Section, warnings: list[str]) -> list[ParsedEntry]
+    머리글 이름으로 열을 찾고 행마다 항목 하나
+
+read_holder(section: Section, purpose: PurposeCode, text: str) -> tuple[str?, bool?]
+    권리자 칸에서 역할 낱말(소유자 · 근저당권자 · 전세권자 · 임차권자 · 채권자 · 수탁자 · 가등기권자) 뒤 이름과 법인 여부
+
+apply_cancellations(entries: list[ParsedEntry]) -> None
+    말소 행으로 같은 구의 N번 항목에 cancelled · cancelled_by_entry_id
+
+clean_html(blocks: list[Block]) -> str
+    panel_html 만들기
 ```
 
 **규칙** — 등기부 구조화에 모델을 쓰지 않는다(5장 결정 2). 파일에서 읽은 것만 내고 판단하지 않는다 — 합산·신호는 `rules`의 일이다.
