@@ -974,12 +974,12 @@ classDiagram
 
 | 메서드 | 부르는 곳 | 유스케이스 | 던지는 에러 |
 |---|---|---|---|
-| `create` | [[JSD-API-001#POST/api/reviews]] | [[JSD-UC-001#UC-A1]] · [[JSD-UC-001#UC-A2]] · [[JSD-UC-001#UC-S10]] | missing_input, invalid_file, not_registry, rate_limited |
+| `create` | [[JSD-API-001#POST/api/reviews]] | [[JSD-UC-001#UC-A1]] · [[JSD-UC-001#UC-A2]] · [[JSD-UC-001#UC-S10]] | missing_input, invalid_file, not_registry, parse_failed, rate_limited |
 | `get` | [[JSD-API-001#GET/api/reviews/{id}]] | [[JSD-UC-001#UC-A1]] | not_found, gone |
 | `cancel` | [[JSD-API-001#DELETE/api/reviews/{id}]] | [[JSD-UC-001#UC-A1]] | not_found |
 | `list_messages` | [[JSD-API-001#GET/api/reviews/{id}/messages]] | [[JSD-UC-001#UC-S9]] | not_found, gone |
 | `stream` | [[JSD-API-001#GET/api/reviews/{id}/stream]] | [[JSD-UC-001#UC-S9]] | not_found, gone |
-| `receive` | [[JSD-API-001#POST/api/reviews/{id}/messages]] | [[JSD-UC-001#UC-A3]] | missing_input, invalid_file, not_registry, wrong_state, ask_limit |
+| `receive` | [[JSD-API-001#POST/api/reviews/{id}/messages]] | [[JSD-UC-001#UC-A3]] | missing_input, invalid_file, not_registry, parse_failed, wrong_state, ask_limit |
 | `override_values` | [[JSD-API-001#PATCH/api/reviews/{id}/values]] | [[JSD-UC-001#UC-A1]] 8a | not_found, wrong_state |
 | `ask` | service_agent · [[JSD-API-002#ask_user]] | [[JSD-UC-001#UC-S7]] · [[JSD-UC-001#UC-A3]] | question_limit |
 | `record` · `owner_matches` · `summarize_and_store` · `check_and_store` · `write_report` · `finish` | service_agent · `override_values` | [[JSD-UC-001#UC-S9]] · [[JSD-UC-001#UC-S8]] | |
@@ -987,12 +987,12 @@ classDiagram
 | `purge_expired` · `warm_samples` · `usage_report` | jobs.py | [[JSD-UC-001#UC-S10]] | |
 
 **규칙이 사는 곳**
-- `create`: 순서가 규칙이다. `upload`와 `sample_id` 중 하나(없거나 둘 다면 missing_input. `sample_id`면 `SampleService.file`) → `gate.check_file` → `gate.take_quota(client_ip, file_sha256, is_sample)` — 예시로 왔거나 예시 파일 해시면 세지 않는다 → `parse_upload`. **여기까지 트랜잭션을 열지 않는다** — 업스테이지 호출(30초·재시도 1회) 동안 DB 연결과 한도 행을 붙들지 않는다 → 짧은 트랜잭션 하나에 `Review` 행과 `RegistryService.create_extract`. 등기부가 아니면(not_registry) 그 트랜잭션을 되돌려 검토가 생기지 않는다. 이미 센 한도는 돌려주지 않는다 — 파싱 비용이 이미 났다(7장). 파일 바이트는 이 메서드가 끝나면 버려진다. 루프는 응답 뒤 라우터가 띄운다
+- `create`: 순서가 규칙이다. `upload`와 `sample_id` 중 하나(없거나 둘 다면 missing_input. `sample_id`면 `SampleService.file`) → `gate.check_file` → `gate.take_quota(client_ip, file_sha256, is_sample)` — 예시로 왔거나 예시 파일 해시면 세지 않는다 → `parse_upload`. **여기까지 트랜잭션을 열지 않는다** — 업스테이지 호출(30초·재시도 1회) 동안 DB 연결과 한도 행을 붙들지 않는다 → 짧은 트랜잭션 하나에 `Review` 행과 `RegistryService.create_extract`. 등기부가 아니면(not_registry) 그 트랜잭션을 되돌려 검토가 생기지 않는다. 이미 센 한도는 돌려주지 않는다 — 파싱 비용이 이미 났다(7장). 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 검토·문서가 생기지 않는다. 파일 바이트는 이 메서드가 끝나면 버려진다. 루프는 응답 뒤 라우터가 띄운다
 - `parse_upload`: `gate.cached_html(file_sha256)` → 없으면 `RegistryService.parse` 후 `gate.remember_html`. 트랜잭션 밖에서만 부른다. 돌려준 `billed_pages`(캐시 적중이면 0)를 `parsed_pages`·`cost_krw`에 더한다
 - `get`: 지역·건물 종류는 `RegistryService.property`, 문서 목록은 `RegistryService.list`, `has_report`는 `ReportService.exists`. `questions_asked`·`asks_used`는 `Question`·`FollowUpTurn` 행 수, `elapsed_sec`는 `finished_at`(없으면 지금) − `created_at`
 - `cancel`: 한 트랜잭션에 `RegistryService.delete_for_review` → 돌려받은 `file_sha256`마다 `gate.forget`(예시 캐시는 남는다) → `CitationService`·`ReportService`의 `delete_for_review` → 자기 행. 원문이 든 파싱 캐시까지 지워야 "즉시 지운다"가 지켜진다([[JSD-API-001#DELETE/api/reviews/{id}]]). `UsageLog`는 남긴다. 도는 루프는 다음 단계 전에 행이 없는 것을 보고 멈춘다
 - `list_messages`·`stream`: 메시지 행 + `CitationService.for_messages`로 `Message`를 만든다. `stream`은 DB를 짧은 주기로 읽어 `seq`가 커진 메시지를 `message`로, 상태·수치가 바뀌면 `state`로 보낸다. 상태가 done·failed·expired이고 열린 차례가 없고 다 보냈으면 `done`. `delta`는 보내지 않는다(7장)
-- `receive`: kind answer면 `question_id`가 이 검토의 pending 질문이어야 한다(아니면 wrong_state). kind ask면 `ReportService.exists`이고 열린 차례가 없어야 한다(아니면 wrong_state). `LIMITS.asks`가 정해졌고 차례 수가 그 값이거나 `llm_cost_krw ≥ LIMITS.cost_krw`면 ask_limit([[JSD-PRD-001#R10]]). 파일이 있으면 `gate.check_file` → `parse_upload`(트랜잭션 밖) → 짧은 트랜잭션에서 `RegistryService.create_extract`. 붙은 문서 ID는 answer면 `answer_document_id`, ask면 `FollowUpTurn.document_id`에 적는다. ask면 `FollowUpTurn`을 열고 사용자 말을 role user · kind say로 남긴다(5장 결정 10). 모든 사용자 문장은 `privacy.mask_text`를 거쳐 저장한다
+- `receive`: kind answer면 `question_id`가 이 검토의 pending 질문이어야 한다(아니면 wrong_state). kind ask면 `ReportService.exists`이고 열린 차례가 없어야 한다(아니면 wrong_state). `LIMITS.asks`가 정해졌고 차례 수가 그 값이거나 `llm_cost_krw ≥ LIMITS.cost_krw`면 ask_limit([[JSD-PRD-001#R10]]). 파일이 있으면 `gate.check_file` → `parse_upload`(트랜잭션 밖) → 짧은 트랜잭션에서 `RegistryService.create_extract`. 업스테이지가 재시도 뒤에도 실패하면 parse_failed(502) — 트랜잭션을 열기 전이라 답·차례·문서가 남지 않는다. 붙은 문서 ID는 answer면 `answer_document_id`, ask면 `FollowUpTurn.document_id`에 적는다. ask면 `FollowUpTurn`을 열고 사용자 말을 role user · kind say로 남긴다(5장 결정 10). 모든 사용자 문장은 `privacy.mask_text`를 거쳐 저장한다
 - `override_values`: 상태 done이고 열린 차례가 없어야 한다. 등기부 읽기·외부 조회 없이 `facts.overrides`를 저장하고 `write_report(revision_reason="직접 입력")` → `ReportService.get`으로 갱신된 의견서를 돌려준다. 합산·신호를 다시 내는 순서는 `write_report` 안에만 있다. 대화에 사용자 말 "직접 입력: …"을 남긴다. 되묻기 차례로 세지 않는다. LLM 비용이 한도에 닿았으면 문장은 템플릿이다(`report_input`의 `use_model`)
 - `ask`: 질문이 `LIMITS.questions`(5)면 question_limit. `Question` 행 + question 메시지 + 상태 waiting_user. 1초마다 행을 다시 읽어 답이 오면 running으로 돌리고 `AskAnswer`를 돌려준다. `LIMITS.answer_timeout_sec`(300)이 지나면 status timeout · answer unknown · notice(answer_timeout). kind가 illegal_building · proxy · owner_type이면 선택지를 [[JSD-PRD-001#R8]] 표의 고정 선택지로 바꿔 내고 답을 열거형 값(`IllegalBuilding` · `ProxyStatus` · `OwnerType`, 모름은 unknown)으로 저장한다 — 등급을 움직이는 이 사실들은 사용자가 고른 답에서만 온다(4.2)
 - `record`: `seq`를 하나 올려 쌓는다. `text`는 가린 뒤 저장한다. `message_id`를 받으면 그 ID로 쌓는다 — 인용이 메시지보다 먼저 만들어지기 때문이다
@@ -1593,7 +1593,7 @@ python -m app.jobs usage_report            일 1회     ReviewService.usage_repo
 
 ## 5. 판단이 필요한 지점
 
-**1. 등기부 파싱을 어디서 하나 — 결정: 업로드 요청 안에서.** `ReviewService.create`·`receive`가 트랜잭션 밖에서 업스테이지를 부르고 결과를 `RegistryExtract`에 저장한다. `read_registry`는 저장된 결과를 읽는다. 파일 바이트가 요청 밖으로 나가지 않으므로 백그라운드 루프의 메모리에도 남지 않고 재시작에도 필요 없다([[JSD-INFRA-001#C2]]). [[JSD-API-001#POST/api/reviews]]의 400 not_registry도 요청 안에서만 답할 수 있다. 대가로 [[JSD-API-002#read_registry]]의 not_registry·parse_failed는 루프에서 나지 않는다(7장).
+**1. 등기부 파싱을 어디서 하나 — 결정: 업로드 요청 안에서.** `ReviewService.create`·`receive`가 트랜잭션 밖에서 업스테이지를 부르고 결과를 `RegistryExtract`에 저장한다. `read_registry`는 저장된 결과를 읽는다. 파일 바이트가 요청 밖으로 나가지 않으므로 백그라운드 루프의 메모리에도 남지 않고 재시작에도 필요 없다([[JSD-INFRA-001#C2]]). [[JSD-API-001#POST/api/reviews]]의 400 not_registry도 요청 안에서만 답할 수 있다. 대가로 [[JSD-API-002#read_registry]]의 not_registry·parse_failed는 루프에서 나지 않는다 — 업로드 요청이 답한다(4.1 `create`·`receive`).
 
 **2. 등기부 구조화에 모델을 쓰나 — 결정: 쓰지 않는다.** 2026-09-16에 업스테이지 출력을 확인했다. 등기부 표가 요소 id가 붙은 `<table>`로 남아 표에서 결정적으로 읽힌다. 취소선은 남지 않지만 "N번…말소" 행으로 말소를 안다. [[JSD-UC-001#UC-S1]] 3과 [[JSD-INFRA-001]] 4장의 "LLM 구조화"보다 정답표 대조가 쉽고 비용이 없다.
 
@@ -1648,13 +1648,9 @@ class DocumentParser(Protocol):
 
 - [ ] [[JSD-DOM-001]] 개정 선행 — 이 문서는 `FollowUpTurn`·`Citation` 카드와 5.1 코드 도메인·5.2 도메인 사이 절이 들어간 개정판에 기댄다. 지금 저장된 도메인 모델(개념 25개)에는 없어 `#FollowUpTurn`·`#Citation` 링크 7곳이 없는 참조로 보이고 승인이 막힌다. 도메인 모델 개정을 먼저 저장한다
 - [ ] ERD·DD — 테이블 이름은 글자로만 적었다. 참조는 아래에서 위로만 적으므로 ERD·DD 문서가 이 문서의 엔티티를 가리킨다
-- [ ] API-001·API-002 되먹임 — 파싱을 업로드 안에서 하므로(5장 결정 1) `read_registry`의 not_registry·parse_failed가 루프에서 나지 않는다. 업로드 중 업스테이지 실패를 [[JSD-API-001]] 2장의 어느 코드로 답할지 정하지 않았다(지금은 internal). [[JSD-API-001#POST/api/reviews/{id}/messages]]로 서류를 올릴 때도 not_registry와 업스테이지 실패가 날 수 있는데 그 경로의 400 목록(missing_input · invalid_file)에 없다
-- [ ] API-002 되먹임 — 되묻기 단계 도구 표에 read_registry가 없는데 4.2 서류 추가는 read_registry부터 돈다. 이 문서는 서류로 연 차례에만 허용했다
-- [ ] API-002 되먹임 — 4.1 한도 행은 질문 5회 도달도 write_report 강제로 적었지만 2장 question_limit과 [[JSD-UC-001#UC-A3]] 3a는 묻지 않고 확인 못 함으로 진행이다. 이 문서는 뒤를 따랐다. 4.1 강제 조건에서 질문 5회를 빼 달라고 되먹인다
-- [ ] API-002 되먹임 — 사실 인자. summarize_rights의 숫자 인자는 사용자 메시지·답변에 있는 값만 받고, check_signals의 열거형 인자(proxy_status · illegal_building · owner_type)는 받지 않고 질문 답으로만 정한다(4.2). 대화에서 말한 시세는 가격 순서의 마지막이다. 도구 설명을 이에 맞추고, 되묻기 차례에서 한도를 넘는 호출에 돌려주는 봉투 코드 `tool_limit`을 2장 표에 더해 달라고 되먹인다
 - [ ] API-001 되먹임 — [[JSD-API-001#GET/api/reviews/{id}]]의 `subject.counterparty_name`은 1장 "개인정보는 응답에 넣지 않는다"와 어긋나고 [[JSD-UI-001#UI-2]] 상단 바도 쓰지 않는다. `ReviewView`에서 뺐다
-- [ ] UC-001·INFRA-001 되먹임 — 캐시 재생을 파싱 캐시로 바꾼 것(5장 결정 3), 보관 기간 24시간(결정 4), 구조화에 모델을 쓰지 않는 것(결정 2). INFRA 6장의 테이블 이름(`review_sessions` 등)은 ERD·DD에서 개념 이름으로 바뀐다
-- [ ] 보관 기간의 시작점 — 만든 뒤 24시간(지금) 또는 마지막 접근 후 24시간(INFRA 6장). 그리고 expired `Review` 행과 비운 공유본 행을 언제 지울지
+- [ ] INFRA-001 되먹임 — INFRA 6장의 테이블 이름(`review_sessions` 등)은 ERD·DD에서 개념 이름으로 바뀐다
+- [ ] 만료된(expired) `Review` 행과 비운 공유본 행을 언제 지울지
 - [ ] 되묻기 횟수 한도 `LIMITS.asks`의 값 — [[JSD-API-001]]·[[JSD-API-002]] 미결과 같다. 정하기 전까지 되묻기와 값 수정은 LLM 비용 한도(`llm_cost_krw`)로만 막힌다
 - [ ] 등기부가 아닌 파일도 IP 한도 한 건으로 센다 — 한도를 파싱 전에 세야 한도를 넘은 요청이 업스테이지 비용을 내지 않는다(4.1 `create`). 맞는지
 - [ ] 오피스텔 "주거용 표기" 추가 질문([[JSD-PRD-001#R11]]) — `QuestionKind`에 없어 필수 항목에 넣지 않았고 주거용 여부는 건축물대장 주용도로만 본다
