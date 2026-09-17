@@ -1,432 +1,485 @@
 ---
 doc_id: JSD-MS-001
 type: MS
-title: 보증금지킴 — 미니스펙
+title: 보증금지킴 — 미니스펙 ReviewService
 status: draft
-upstream: [JSD-SEQ-001, JSD-API-001, JSD-API-002, JSD-DOM-002]
+upstream: [JSD-DOM-002, JSD-SEQ-001, JSD-API-001, JSD-API-002, JSD-DOM-003]
 ---
 
-# MINISPEC
+# MINISPEC — ReviewService
 
 ## 0. 이 문서가 다루는 것
 
-서비스 함수 26개. DTO 타입은 [[JSD-DOM-002]]에만 정의돼 있고 여기서는 이름만 쓴다. 분기는 `if 조건 → 결과 · else → 결과`. REST는 [[JSD-API-001]], 에이전트 도구는 [[JSD-API-002]].
+`review/service.py`의 함수 22개. 클래스 명세 [[JSD-DOM-002#ReviewService]](4.1)의 시그니처를 함수 안쪽까지 내린 것이다. **MS 문서 하나 = 클래스 명세 4장 절 하나 = 코드 파일 하나** — 이 파일을 짤 때 이 문서를 본다. 에이전트 루프(`review/service_agent.py`, 4.2)는 다음 문서다.
+
+형식은 시그니처·근거·입력·처리·출력·예외·호출하는 것·테스트 관점이다. 처리가 몇 줄이면 간략형으로 시그니처·처리·테스트만 둔다. 내부 타입(`ReviewFacts` `UserInput` `Accepted` …)은 [[JSD-DOM-002]] 2.8, 열거형은 2.9, 테이블과 컬럼은 [[JSD-DOM-003]]이다.
+
+**표기** — `→` 반환·결과, `!` 예외(`AppError` 코드), `DB:` 자기 테이블 접근, `if 조건 → 결과 · else → 결과` 분기, `·` 같은 단계 안 구분. `LIMITS`·`PRICES`는 `core/config.py` 상수다.
+
+**이 파일이 지키는 것**
+- 자기 테이블은 `reviews` `review_records` `questions` `follow_up_turns` `usage_logs` 다섯이다. 다른 도메인의 행은 그 서비스를 불러서만 만진다([[JSD-DOM-002]] 3.2)
+- **트랜잭션 경계는 이 파일이 정한다.** 업스테이지·모델을 기다리는 동안 트랜잭션과 세션을 붙들지 않는다. 루프가 부르는 함수는 부를 때마다 짧은 세션을 연다([[JSD-DOM-002]] 6장)
+- 사용자 문장과 에이전트 문장은 저장 전에 가린다. 이름 목록은 `RegistryService.holder_names`와 `reviews.counterparty_name`이다. 이름은 이 파일 밖으로 내보내지 않는다
+- 예외 문자열을 로그·`Error.detail`에 쓰지 않는다. 로그에는 `review_id`와 코드만 남긴다
+
+---
 
 ## 1. 함수 목록
 
-| 도메인 | 함수 | 한 줄 |
-|---|---|---|
-| gate | GateService.validate_file | 형식·크기·페이지 검사 |
-| gate | GateService.cache_key | 캐시 키 생성 |
-| gate | GateService.cache_lookup | 캐시 조회 |
-| gate | GateService.rate_check | IP 일일 한도 |
-| gate | GateService.record_usage | 비용 집계 |
-| review | ReviewService.create | 세션 생성·루프 시작 |
-| review | ReviewService.get | 세션 조회 |
-| review | ReviewService.stream_events | SSE 스트림 (실시간·재생) |
-| review | ReviewService.answer | 답변 접수·재개 |
-| review | ReviewService.override_values | 추출값 수정 후 재판정 |
-| review | ReviewService.cancel | 취소 |
-| review | AgentLoop.run | 에이전트 루프 |
-| review | AgentLoop.dispatch | 도구 호출 라우팅·한도 |
-| review | AgentLoop.emit | 이벤트 저장·전송 |
-| review | AgentLoop.ask | 질문 대기 |
-| registry | RegistryService.read | 파싱 + 구조화 |
-| registry | RegistryService.structure | 표 → Registry (LLM) |
-| registry | RegistryService.get_html | 원문 HTML |
-| rules | RulesService.summarize | 권리 합산 |
-| rules | RulesService.check | 신호 + 등급 |
-| rules | RulesService.criteria | 규칙표 JSON |
-| lookup | LookupService.price | 실거래가 |
-| lookup | LookupService.building | 건축물대장 |
-| lookup | LookupService.defaulter | 명단 대조 |
-| report | ReportService.write | 의견서 조립·문장·후검증 |
-| report | ReportService.verify_numbers | 후검증 |
-| report | ShareService.create | 공유본 |
+| 함수 | 한 줄 |
+|---|---|
+| [[#ReviewService.create]] | 업로드를 검사·파싱하고 검토를 만든다 |
+| [[#ReviewService.parse_upload]] | 파싱 캐시를 보고 없으면 업스테이지로 파싱 |
+| [[#ReviewService.get]] | 상단 바 요약과 진행 수치 |
+| [[#ReviewService.cancel]] | 검토와 딸린 것을 즉시 지운다 |
+| [[#ReviewService.list_messages]] | 대화 한 쪽 |
+| [[#ReviewService.stream]] | 대화 스트림 이벤트 |
+| [[#ReviewService.receive]] | 답변·되묻기·서류 추가를 받는다 |
+| [[#ReviewService.override_values]] | 시세·금액 직접 입력으로 다시 판정 |
+| [[#ReviewService.ask]] | 질문을 내고 답을 기다린다 |
+| [[#ReviewService.record]] | 대화 메시지 하나를 쌓는다 |
+| [[#ReviewService.owner_matches]] | 소유자와 계약 상대방이 같은지 |
+| [[#ReviewService.summarize_and_store]] | 합산을 내고 facts에 둔다 |
+| [[#ReviewService.check_and_store]] | 합산을 다시 낸 뒤 신호·등급을 facts에 둔다 |
+| [[#ReviewService.write_report]] | 합산·신호·의견서를 다시 내고 카드를 남긴다 |
+| [[#ReviewService.finish]] | 상태를 닫고 사용량을 갱신 |
+| [[#ReviewService.require_live]] | 검토 경로의 404·410 판정 |
+| [[#ReviewService.rights_input]] | 합산 입력 채우기 |
+| [[#ReviewService.signal_input]] | 신호 입력 채우기 |
+| [[#ReviewService.report_input]] | 의견서 입력 채우기 |
+| [[#ReviewService.purge_expired]] | 보관 기간이 지난 검토를 비운다 |
+| [[#ReviewService.warm_samples]] | 예시 3건의 파싱 캐시를 채운다 |
+| [[#ReviewService.usage_report]] | 하루치 사용량 요약 |
+
+---
 
 ## 2. 함수
 
-### 2.1 gate
+#### ReviewService.create 업로드를 검사·파싱하고 검토를 만든다
 
-#### GateService.validate_file 파일 검사
+**시그니처** `create(upload: Upload | None, sample_id: str | None, deposit_manwon: int, contract_type: ContractType, counterparty_name: str | None, client_ip: str) -> ReviewCreated`
 
-**시그니처** `validate_file(upload: UploadFile) -> FileMeta`
+근거: [[JSD-SEQ-001#SEQ-1]] · [[JSD-API-001#POST/api/reviews]] · [[JSD-UC-001#UC-A1]] 1~3 · [[JSD-UC-001#UC-S10]] · [[JSD-DOM-002]] 5장 결정 1·3
 
-**입력** 업로드 파일 (메모리)
-
-**처리**
-1. `if content_type ∉ {pdf, jpeg, png} → invalid_file`
-2. `if size > 10MB → invalid_file`
-3. `if pdf: page_count = pypdf 페이지 수 · if > 20 → invalid_file`; 이미지는 1
-4. `sha256(bytes)` 계산
-
-**출력** `FileMeta{hash, page_count, content_type}`
-
-**예외** | 조건 | 에러 | — 위 각 → `invalid_file` (400)
-
-**테스트 관점** 경계값 10MB·20쪽, 잘못된 확장자, PDF 헤더 위조
-
-근거: [[JSD-UC-001#UC-S10]] · [[JSD-API-001#POST/api/reviews]]
-
-#### GateService.cache_key 캐시 키
-
-**시그니처** `cache_key(file_hash, deposit_manwon, contract_type, counterparty_name|None) -> str`
-
-**처리** `sha256(f"{file_hash}|{deposit}|{type}|{name or ''}")`
-
-**테스트 관점** 이름 유무로 키가 달라짐, 같은 입력은 같은 키
-
-#### GateService.cache_lookup 캐시 조회
-
-**시그니처** `cache_lookup(key) -> UUID | None`
-
-**처리** `select file_cache where cache_key=key and (expires_at is null or expires_at > now())` → `session_id` · 없으면 `None`
-
-**테스트 관점** 만료된 키는 miss, 예시 키는 만료 없음
-
-#### GateService.rate_check IP 한도
-
-**시그니처** `rate_check(ip: str, is_sample: bool) -> None`
+**입력** 라우터가 폼에서 읽은 값. `upload`는 메모리의 바이트다. `client_ip`는 프록시 헤더를 반영한 원문 IP이고 이 함수 밖으로 원문이 나가지 않는다
 
 **처리**
-1. `if is_sample → return`
-2. `count = select count(*) from review_sessions where client_ip_hash=sha256(ip) and created_at >= today and is_sample=false`
-3. `if count >= 5 → rate_limited`
+1. if `upload`와 `sample_id`가 둘 다 None이거나 둘 다 있음 → `! missing_input(field file)` · if `deposit_manwon < 1` → `! missing_input(field deposit_manwon)`
+2. `is_sample = sample_id is not None` · if `is_sample` → `upload = SampleService.file(sample_id)` (없는 ID면 거기서 `! missing_input`)
+3. `check = gate.check_file(upload)` — `! invalid_file`은 그대로 올린다
+4. `gate.take_quota(client_ip, check.file_sha256, is_sample, today)` — `! rate_limited`. **트랜잭션 밖, 한 문장**
+5. `parsed, from_cache = parse_upload(upload, check, is_sample)` — `! parse_failed`는 그대로. 여기까지 DB 트랜잭션을 열지 않는다
+6. 짧은 트랜잭션 하나를 연다
+   1. `DB: reviews insert` — `status created`, `deposit_manwon`, `contract_type`, `counterparty_name`(앞뒤 공백 제거, 빈 문자열이면 null), `sample_id`, `facts {}`, `parsed_pages = parsed.billed_pages`, `cost_krw = parsed.billed_pages × PRICES.parse_page_krw`, `expires_at = now + LIMITS.retention_hours`
+   2. `RegistryService.create_extract(review_id, parsed.html, parsed.page_count, check.file_sha256)` · if `! not_registry` → 롤백 → `! not_registry`. 검토도 캐시도 생기지 않는다
+   3. if not `from_cache` → `gate.remember_html(check.file_sha256, parsed.html, parsed.page_count, is_sample)`
+   4. 커밋
+7. `upload`를 참조하는 변수를 모두 놓는다. 바이트는 이 함수가 끝나면 버려진다
+8. `→ ReviewCreated(review_id, status created, is_sample, expires_at)`. 루프는 라우터가 응답 뒤에 띄운다
 
-**테스트 관점** 5번째 허용, 6번째 거절, 예시는 카운트 안 됨, 자정 리셋
+**출력** `ReviewCreated`
 
-#### GateService.record_usage 비용 집계
+**예외**
 
-**시그니처** `record_usage(session_id, kind, units, cost_krw) -> None`
+| 조건 | 에러 |
+|---|---|
+| 파일·예시 둘 다 없음·둘 다 있음, 보증금 1 미만 | `missing_input` |
+| 형식·크기·쪽수·암호 | `invalid_file` |
+| IP 하루 한도 | `rate_limited` |
+| 업스테이지 재시도 뒤 실패 | `parse_failed` |
+| 갑구·을구가 없음 | `not_registry` |
 
-**처리** `insert usage_log` + `review_sessions.cost_krw += cost_krw`
+**호출하는 것** `SampleService.file` · `gate.check_file` · `gate.take_quota` · [[#ReviewService.parse_upload]] · `RegistryService.create_extract` · `gate.remember_html`
 
-**테스트 관점** 합계 일치
+**테스트 관점** 예시 ID로 시작 → `is_sample` true, 한도 행이 늘지 않는다 · 같은 파일 두 번째 → 업스테이지 가짜가 불리지 않고 `parsed_pages` 0 · 등기부가 아닌 PDF → 400, `reviews`·`file_caches` 행이 모두 없다 · 파싱 실패 → 502, 행 없음 · 한도 6번째 → 429 · 파서가 부르는 동안 DB 세션이 열려 있지 않다(가짜 파서 안에서 확인)
 
-### 2.2 review
+---
 
-#### ReviewService.create 세션 생성
+#### ReviewService.parse_upload 파싱 캐시를 보고 없으면 업스테이지로 파싱
 
-**시그니처** `create(upload|sample_id, deposit_manwon, contract_type, counterparty_name, ip) -> CreateResult`
+**시그니처** `parse_upload(upload: Upload, check: FileCheck, is_sample: bool) -> tuple[ParsedDocument, bool]`
 
-**입력** 파일 또는 예시 ID, 조건, IP
-
-**처리**
-1. `if sample_id → bytes = assets/samples/{id}.pdf, is_sample=True · else → bytes = upload`
-2. `meta = validate_file`
-3. `rate_check(ip, is_sample)`
-4. `key = cache_key(...)`; `hit = cache_lookup(key)`
-5. `if hit → insert review_sessions(status=done, cached_from=hit) → return {session_id, cached=True}`
-6. `insert review_sessions(status=created, ...)`
-7. `background: AgentLoop.run(session_id, bytes)`
-8. `return {session_id, cached=False}`
-
-**출력** `CreateResult{session_id, status, cached, is_sample}`
-
-**예외** invalid_file, rate_limited, missing_input
-
-**호출하는 것** GateService 전부, AgentLoop.run
-
-**테스트 관점** 캐시 히트 시 루프가 시작되지 않음, 예시는 한도 무시, 바이트가 디스크에 없음
-
-근거: [[JSD-SEQ-001#SEQ-1]] [[JSD-SEQ-001#SEQ-3]] · [[JSD-API-001#POST/api/reviews]]
-
-#### ReviewService.get 세션 조회
-
-**시그니처** `get(session_id) -> SessionView`
-
-**처리** `select` → `if none → not_found`; `pending_question = 마지막 question 이벤트 (status=waiting_user일 때)`
-
-**테스트 관점** waiting_user일 때 질문 포함
-
-#### ReviewService.stream_events SSE
-
-**시그니처** `stream_events(session_id, last_event_id: int|None) -> AsyncIterator[SSE]`
+근거: [[JSD-SEQ-001#SEQ-1]] · [[JSD-DOM-002]] 5장 결정 3
 
 **처리**
-1. `session = get`; `src = session.cached_from or session_id`
-2. `if session.cached_from → 저장된 이벤트를 seq > last_event_id부터 0.3초 간격으로 yield → 끝`
-3. `else → 저장된 이벤트(seq > last_event_id) 먼저 yield, 이후 루프의 이벤트 큐를 구독해 yield`
-4. `report 또는 error 이벤트 후 종료`
+1. `cached = gate.cached_html(check.file_sha256)` · if `cached` → `→ (cached, True)` (`billed_pages` 0)
+2. else → `parsed = RegistryService.parse(upload.data, check.media_type)` → `→ (parsed, False)`
+3. 캐시에 넣지 않는다. 부른 쪽이 `create_extract`가 성공한 트랜잭션에서 넣는다. 트랜잭션 밖에서만 부른다
 
-**테스트 관점** 재접속 시 중복 없음, 캐시 재생 순서, 종료 조건
+**테스트 관점** 캐시 적중이면 파서 호출 0 · 캐시 없으면 파서 1회, `file_caches`에 아직 행이 없다
 
-근거: [[JSD-SEQ-001#SEQ-1]] [[JSD-SEQ-001#SEQ-3]] · [[JSD-API-001#GET/api/reviews/{id}/events]]
+---
 
-#### ReviewService.answer 답변 접수
+#### ReviewService.get 상단 바 요약과 진행 수치
 
-**시그니처** `answer(session_id, question_id, answer: Any, file: UploadFile|None) -> None`
+**시그니처** `get(review_id: str) -> ReviewView`
 
-**처리**
-1. `if status != waiting_user or pending.question_id != question_id → wrong_state`
-2. `if file → meta = validate_file; doc_id = RegistryService.read(session_id, bytes, kind=land).id; answer = doc_id`
-3. `emit(answer 이벤트)`; `status=running`
-4. `AgentLoop.resume(session_id, answer)`
-
-**테스트 관점** 잘못된 question_id, 파일 답변, unknown
-
-근거: [[JSD-SEQ-001#SEQ-2]] · [[JSD-API-001#POST/api/reviews/{id}/answers]]
-
-#### ReviewService.override_values 추출값 수정
-
-**시그니처** `override_values(session_id, price_manwon|None, entries: list[{entry_id, amount_manwon}]) -> Report`
+근거: [[JSD-SEQ-001#SEQ-12]] · [[JSD-API-001#GET/api/reviews/{id}]]
 
 **처리**
-1. `if status != done → wrong_state`
-2. `registry = load`; 각 entry의 `amount_manwon` 덮어쓰기, `user_modified=True`
-3. `rights = RulesService.summarize(registry, deposit, price=price_manwon, source=user_input, answers)`
-4. `{signals, grade} = RulesService.check(registry, rights, answers)`
-5. `report = ReportService.write(..., rebuild=True)`
-6. `emit(answer "시세 직접 입력 N")`; `update reports`
+1. `review = DB: reviews where id` · if 없음 → `! not_found` · if `status expired` → `! gone`
+2. `prop = RegistryService.property(review_id)` · `docs = RegistryService.list(review_id)` · `has_report = ReportService.exists(review_id)`
+3. `DB: questions` 수 → `questions_asked` · `status pending`인 가장 최근 행 → `pending_question`(Question DTO) · `DB: follow_up_turns` 수 → `asks_used`
+4. `elapsed_sec = (finished_at or now) − created_at`
+5. `→ ReviewView` — `subject {building_type: prop.building_type, deposit_manwon, contract_type, region: prop.region}`, `counters {tool_calls, questions_asked, asks_used, elapsed_sec, cost_krw}`, `documents`는 `page_count`를 뺀 목록, `has_report`, `expires_at`
 
-**테스트 관점** 등기부 읽기·외부 조회가 호출되지 않음, `price_source=user_input`
+**예외** `not_found` 행 없음 · `gone` expired
 
-근거: [[JSD-SEQ-001#SEQ-4]]
+**테스트 관점** 응답 어디에도 `counterparty_name`이 없다 · pending 질문이 둘이면(있어서는 안 되지만) 최근 것 · expired → 410
 
-#### ReviewService.cancel 취소
+---
 
-**시그니처** `cancel(session_id) -> None`
+#### ReviewService.cancel 검토와 딸린 것을 즉시 지운다
 
-**처리** `AgentLoop.stop`; `delete review_documents`; `status=failed(cancelled)`
+**시그니처** `cancel(review_id: str) -> None`
 
-**테스트 관점** 취소 후 SSE가 error 이벤트로 끝남
-
-#### AgentLoop.run 에이전트 루프
-
-**시그니처** `run(session_id: UUID, file_bytes: bytes) -> None`
-
-**입력** 세션, 파일 바이트 (메모리)
+근거: [[JSD-SEQ-001#SEQ-15]] · [[JSD-API-001#DELETE/api/reviews/{id}]] · [[JSD-DOM-002]] 5장 결정 4
 
 **처리**
-1. `status=running`; `messages = [system(역할·도구·검토 항목·필수 검토·금지), user(세션 요약: 건물 미정, 보증금, 형태, 상대방)]`
-2. 반복 (최대 20회):
-   1. `resp = openai.chat(messages, tools=8종, tool_choice=auto)`; `record_usage(llm)`
-   2. `if resp에 tool_call 없음 → messages += "도구를 고르세요"; retries+=1 · if retries==3 → forced=write_report`
-   3. `if 첫 호출 and tool != read_registry → 거절 tool_result "read_registry가 먼저"`
-   4. `emit(thought, resp.text)`; `emit(tool_call)`
-   5. `result = dispatch(tool, args)`
-   6. `emit(tool_result, 요약문)`; `messages += tool_result`
-   7. `if tool == write_report and result.ok → break`
-   8. `if tool_calls ≥ 20 or cost ≥ 300 → forced=write_report`
-   9. `if tool == write_report 요청인데 필수 항목 미시도 (R11) and not forced → tool_result "미시도: [...]" (1회)`
-3. `status=done`; `emit(report)`
-4. `finally: file_bytes = None` (참조 해제)
+1. `review = DB: reviews where id for update` · if 없음 → `! not_found` · if `status expired` → `! gone`. 남긴 행을 지우지 않는다
+2. 같은 트랜잭션에서
+   1. `hashes = RegistryService.delete_for_review(review_id)`
+   2. 해시마다 `gate.forget(hash)` — 예시 캐시는 `forget`이 남긴다
+   3. `CitationService.delete_for_review(review_id)` · `ReportService.delete_for_review(review_id)`
+   4. `DB: review_records · questions · follow_up_turns delete where review_id` → `DB: reviews delete`
+3. 커밋. `usage_logs`는 건드리지 않는다
+4. 도는 루프에는 알리지 않는다. 루프가 다음 확인이나 다음 쓰기에서 행이 없는 것을 보고 멈춘다([[#ReviewService.record]] · [[#ReviewService.ask]])
 
-**출력** 없음 (이벤트·DB)
+**예외** `not_found` 행 없음 · `gone` expired
 
-**예외** | 파싱 실패·등기부 아님 | `status=failed`, `emit(error)` |
+**테스트 관점** 지운 뒤 `registry_extracts`·`citations`·`opinions`·`file_caches`(그 해시, 예시 아님)가 모두 0행 · `usage_logs` 행은 남는다 · 예시 파일 캐시는 남는다 · expired 검토 → 410이고 행이 남는다 · `shared_opinions`는 남는다
 
-**호출하는 것** dispatch, emit, ask, RegistryService·RulesService·LookupService·ReportService
+---
 
-**테스트 관점** 첫 호출 강제, 텍스트 응답 3회 → 강제 의견서, 20회 한도, 필수 항목 미시도 되돌림 1회, 병렬 tool_calls 처리, 파일 바이트 해제
+#### ReviewService.list_messages 대화 한 쪽
 
-근거: [[JSD-SEQ-001#SEQ-1]] · [[JSD-UC-001#UC-S9]] · [[JSD-API-002]] 4절
+**시그니처** `list_messages(review_id: str, after_seq: int = 0, limit: int = 200) -> MessagesPage`
 
-#### AgentLoop.dispatch 도구 라우팅
-
-**시그니처** `dispatch(session, tool: str, args: dict) -> ToolResult`
+근거: [[JSD-SEQ-001#SEQ-11]] · [[JSD-API-001#GET/api/reviews/{id}/messages]]
 
 **처리**
-1. `if tool ∉ 8종 → {ok:false, error:"unknown_tool"}`
-2. `tool_calls += 1`
-3. 매핑: `read_registry→RegistryService.read` · `summarize_rights→RulesService.summarize` · `check_signals→RulesService.check` · `lookup_price→LookupService.price` · `lookup_building→LookupService.building` · `match_defaulter→LookupService.defaulter` · `ask_user→ask` · `write_report→ReportService.write`
-4. `try → {ok:true, data}` · `except ToolError e → {ok:false, error:e.code}` · `except Exception → {ok:false, error:"tool_failed"}` (루프는 계속)
+1. `review = DB: reviews where id` · if 없음 → `! not_found` · if expired → `! gone`
+2. `limit = min(max(limit, 1), 200)` · `rows = DB: review_records where review_id and seq > after_seq order by seq limit`
+3. `cites = CitationService.for_messages(review_id, [row.id])`
+4. 행마다 `Message(message_id=row.id, seq, role, kind, text, citations=cites.get(row.id, []), data, created_at)`
+5. `→ MessagesPage(messages, next_seq = 마지막 seq 또는 after_seq, status = review.status)`
 
-**테스트 관점** 미지 도구 거절, 예외가 루프를 죽이지 않음
+**테스트 관점** `after_seq`가 마지막 seq면 빈 목록, `next_seq`는 그대로 · 인용이 없는 메시지는 빈 목록 · `limit` 500 → 200
 
-#### AgentLoop.emit 이벤트
+---
 
-**시그니처** `emit(session_id, kind, text, tool=None, data=None) -> ReviewEvent`
+#### ReviewService.stream 대화 스트림 이벤트
 
-**처리** `seq = max+1`; `data = scrub_pii(data)`; `insert review_events`; 구독 큐에 push
+**시그니처** `stream(review_id: str, last_seq: int = 0) -> AsyncIterator[StreamEvent]`
 
-**테스트 관점** seq 연속, PII 제거(이름·주민번호 패턴)
+근거: [[JSD-SEQ-001#SEQ-11]] · [[JSD-API-001#GET/api/reviews/{id}/stream]] · [[JSD-INFRA-001#C4]]
 
-#### AgentLoop.ask 질문 대기
+**입력** `last_seq`는 `Last-Event-ID` 헤더 값. 없으면 0
 
-**시그니처** `ask(session, question: Question) -> Any`
+**처리** — 제너레이터. 주기마다 짧은 세션을 연다
+1. 첫 확인: `DB: reviews where id` · if 없음 → `! not_found` · if expired → `! gone`. 여기까지는 응답 헤더 전이라 HTTP 에러로 나간다
+2. `prev_state = None` · 반복(1초마다)
+   1. `page = list_messages(review_id, last_seq, 200)` · 메시지마다 `yield StreamEvent(event message, id = seq, data = Message)` · `last_seq` 갱신
+   2. `state = {status, counters, pending_question}` — [[#ReviewService.get]]의 3~4단계와 같은 값 · if `state != prev_state` → `yield StreamEvent(event state, data = state)` · `prev_state = state`
+   3. if 행이 사라짐(삭제) → `yield StreamEvent(event error, data = Error(not_found))` → 끝
+   4. if `status in (done, failed, expired)` and `DB: follow_up_turns where status running` 없음 and 1에서 새 메시지가 없음 → `yield StreamEvent(event done)` → 끝
+3. `delta`는 보내지 않는다
 
-**처리**
-1. `if questions_asked >= 5 → ToolError("question_limit")`
-2. `questions_asked += 1`; `status=waiting_user`; `emit(question)`
-3. `await event.wait(timeout=300)` · `if timeout → answer="unknown"; emit(answer "답변 없이 진행")`
-4. `status=running`; `return answer`
+**출력** `StreamEvent` 이어짐. 이벤트 `id`는 message일 때만
 
-**테스트 관점** 한도, 타임아웃, 정상 답변 반영
+**테스트 관점** `last_seq` 5로 붙으면 6부터 · 끝난 검토에 붙으면 남은 메시지 → state → done 순서 · 스트림 도중 삭제 → error 뒤 끝 · 열린 되묻기 차례가 있으면 done을 보내지 않는다
 
-근거: [[JSD-SEQ-001#SEQ-2]] · [[JSD-API-002#ask_user]]
+---
 
-### 2.3 registry
+#### ReviewService.receive 답변·되묻기·서류 추가를 받는다
 
-#### RegistryService.read 등기부 읽기
+**시그니처** `receive(review_id: str, user_input: UserInput) -> Accepted`
 
-**시그니처** `read(session_id, file_bytes, kind_hint: str|None) -> Registry`
+근거: [[JSD-SEQ-001#SEQ-7]] · [[JSD-SEQ-001#SEQ-9]] · [[JSD-API-001#POST/api/reviews/{id}/messages]] · [[JSD-UC-001#UC-A3]] · [[JSD-DOM-002]] 5장 결정 10
 
-**처리**
-1. `html, blocks = upstage.parse(file_bytes)` (타임아웃 30s, 재시도 1) · 실패 → `ToolError("parse_failed")`
-2. `record_usage(parse, pages)`
-3. `sections = split(html, ["표제부", "갑구", "을구"])` · `if 갑구·을구 없음 → ToolError("not_registry")`
-4. `registry = structure(sections)`
-5. `registry.building.building_type = classify(표제부 텍스트)` (아파트/다세대·연립/다가구·단독/오피스텔/기타)
-6. `insert review_documents(html, registry, doc_kind)`; `update review_sessions.building_type`
-7. `return registry`
-
-**예외** parse_failed, not_registry
-
-**호출하는 것** structure, upstage client
-
-**테스트 관점** 예시 3건 필수 필드 정답 일치, 등기부 아닌 PDF 거절, 토지 등기부(kind=land)
-
-근거: [[JSD-UC-001#UC-S1]] · [[JSD-API-002#read_registry]]
-
-#### RegistryService.structure 구조화
-
-**시그니처** `structure(sections: dict[str, str]) -> Registry`
+**입력** `kind` answer면 `question_id`와 `choice`·`text`·`file` 중 하나. `kind` ask면 `text`나 `file` 중 하나 이상
 
 **처리**
-1. 갑구·을구 표를 행 단위 텍스트 + `block_id`로 나열
-2. `openai.chat(구조화 프롬프트, response_format=Registry JSON schema)` · 실패 시 1회 재요청 · 그래도 실패 → 해당 구간 빈 목록 + warning
-3. 후처리: `purpose_code` 정규화(사전 매핑), `cancelled` 판정(취소선 마크·"말소" 등기목적·말소 대상 순위 참조), 부기등기 `parent_rank_no` 연결과 감액 반영
-4. `block_id` 비어 있으면 warning
+1. `review = DB: reviews where id` · if 없음 → `! not_found` · if expired → `! gone`
+2. 입력 검사 · if answer이고 `question_id` 없음 → `! missing_input(field question_id)` · if answer이고 `choice`·`text`·`file` 모두 없음 → `! missing_input(field text)` · if ask이고 `text`·`file` 모두 없음 → `! missing_input(field text)`
+3. 상태 검사
+   - answer: `q = DB: questions where id = question_id and review_id` · if 없거나 `q.status != pending` → `! wrong_state`
+   - ask: if not `ReportService.exists(review_id)` → `! wrong_state` · if `DB: follow_up_turns where review_id and status running` 있음 → `! wrong_state` · if `LIMITS.asks`가 있고 차례 수 ≥ `LIMITS.asks` → `! ask_limit` · if `review.llm_cost_krw ≥ LIMITS.cost_krw` → `! ask_limit`
+4. if `file` → `check = gate.check_file(file)` → `parsed, from_cache = parse_upload(file, check, False)`. 트랜잭션 밖
+5. `names = RegistryService.holder_names(review_id) + [counterparty_name]` · `masked = privacy.mask_text(text, names)` (text가 있을 때)
+6. 짧은 트랜잭션 하나
+   1. if `file` → `doc = RegistryService.create_extract(review_id, parsed.html, parsed.page_count, check.file_sha256)` · if `! not_registry` → 롤백 → `! not_registry` · if not `from_cache` → `gate.remember_html(...)` · `DB: reviews parsed_pages += billed_pages, cost_krw += billed_pages × PRICES.parse_page_krw`
+   2. answer: `answer = 답 값`(아래) → `DB: questions set status answered, answer, answered_at now, answer_document_id = doc.id` → `message_id = record(user, answer, masked 또는 선택지 라벨, AnswerData(question_id, choice, text=masked, document_id))`
+   3. ask: `turn_id = DB: follow_up_turns insert (running, document_id = doc.id)` — 부분 unique 위반이면 롤백 → `! wrong_state` → `message_id = record(user, say, masked 또는 "서류를 올렸습니다", None, turn_id)`
+   4. 커밋
+7. `→ Accepted(message_id, seq, turn_id)` — answer면 `turn_id` None. 기다리던 `ask`가 행을 다시 읽어 가져간다
 
-**테스트 관점** 말소 항목 제외, 부기 감액, 거래가액 추출, purpose_code 매핑표
+**답 값** — `q.kind`가 illegal_building · proxy · owner_type이면 `choice`를 고정 선택지 표(라벨 → 열거형 값, [[JSD-PRD-001#R8]])로 바꾼다. 표에 없는 `choice` → `! missing_input(field choice)`. 모름 → `unknown`. 그 밖의 종류는 `choice` 또는 `masked`. 파일 답이면 `"file"`
 
-#### RegistryService.get_html 원문
+**예외**
 
-**시그니처** `get_html(session_id, kind) -> str`
+| 조건 | 에러 |
+|---|---|
+| 입력 없음, 고정 선택지 밖 | `missing_input` |
+| 파일 형식 | `invalid_file` |
+| 파싱 실패 | `parse_failed` |
+| 등기부 아님 | `not_registry` |
+| pending이 아닌 질문, 의견서 전 되묻기, 열린 차례 | `wrong_state` |
+| 되묻기 한도·비용 한도 | `ask_limit` |
 
-**처리** `select parsed_html` · `if none (만료) → expired`
+**호출하는 것** `ReportService.exists` · `gate.check_file` · [[#ReviewService.parse_upload]] · `RegistryService.create_extract` · `RegistryService.holder_names` · `gate.remember_html` · `privacy.mask_text` · [[#ReviewService.record]]
 
-### 2.4 rules (순수 함수, 외부 의존 없음)
+**테스트 관점** 대리 질문에 "대리인(위임장 있음)" → `answer = proxy_with_poa` · 이미 timeout인 질문에 답 → 409 · 되묻기 동시 두 요청 → 하나는 202, 하나는 409(부분 unique) · 토지 등기부 파일 답 → 문서 2개, `answer_document_id` 채움 · 되묻기 문장에 소유자 이름 → 저장된 text에 라벨 · 파일이 등기부가 아니면 질문이 pending 그대로
 
-#### RulesService.summarize 권리 합산
+---
 
-**시그니처** `summarize(registries: list[Registry], deposit_manwon: int, price_manwon: int|None, price_source: str|None, other_tenants_manwon: int|None, vacant_rooms: int|None, region: str) -> RightsSummary`
+#### ReviewService.override_values 시세·금액 직접 입력으로 다시 판정
 
-**처리**
-1. `mortgage = Σ eul.amount where purpose_code=mortgage and not cancelled` (건물+토지, 부기 감액 반영)
-2. `lease = Σ eul.amount where purpose_code=lease_right and not cancelled`
-3. `if building_type == multi_household: tenants = (other_tenants or 0) + (vacant_rooms or 0) × 최우선변제금[region]; unknown = other_tenants is None` · else `tenants=0, unknown=False`
-4. `senior = mortgage + lease + tenants`
-5. `if price → debt_ratio = (senior + deposit)/price, senior_ratio = senior/price` · else `None`
-6. `based_on = 사용한 entry_id`
+**시그니처** `override_values(review_id: str, overrides: ValueOverrides) -> Report`
 
-**테스트 관점** 말소 제외, 토지 합산, 다가구 가산, 가격 없음, 5건 이상 단위 테스트
-
-근거: [[JSD-PRD-001#R4]] · [[JSD-API-002#summarize_rights]]
-
-#### RulesService.check 신호·등급
-
-**시그니처** `check(registries, rights: RightsSummary, ctx: CheckContext) -> tuple[list[Signal], Grade]`
-
-**입력** ctx = counterparty_name, proxy_status, illegal_building, owner_type, defaulter_match, building_main_use, today
-
-**처리** (규칙표 [[JSD-PRD-001#R5]] 순서)
-1. `encumbrance: gap.purpose_code ∈ {seizure, injunction, provisional, auction, notice} and not cancelled → danger`
-2. `trust: gap purpose_code==trust or cause contains 신탁 → danger`
-3. `lease_registration: eul purpose_code==housing_lease and not cancelled → danger`
-4. `owner_mismatch: counterparty and counterparty != 최종 소유자 → if proxy_status==proxy_with_poa → caution · else → danger`
-5. `defaulter_match → danger`
-6. `illegal_building==yes or main_use contains 근린생활 (아파트 제외) → danger`
-7. `land_right_unregistered or separate_land_registry → caution`
-8. `recent_mortgage: 미말소 근저당 received_at ≥ today-90d → caution`
-9. `frequent_transfer: 보존등기 ≤ 1y or 2년 내 ownership_transfer ≥ 2 → caution`
-10. `corporate_owner: 최종 소유자 holder_is_corporation or owner_type==corporation → caution`
-11. `senior_excess: rights.senior_ratio > 0.54 → caution`
-12. `multi_household_unknown: rights.multi_household_unknown → caution`
-13. 등급: `if any danger or debt_ratio > 0.90 → danger · elif any caution or 0.70 < debt_ratio ≤ 0.90 or price is None or 소유자 미확인 → caution · else → safe`
-14. `deciders`, `unknowns` 채움; 각 Signal에 `evidence_ids`(entry_id·answer_id) 필수
-
-**출력** (signals, grade)
-
-**테스트 관점** 규칙 12개 각각 양·음성, 경계 70/90/54, 대리인 완화, 가격 없음 → 최소 주의
-
-근거: [[JSD-PRD-001#R5]] [[JSD-PRD-001#R6]] · [[JSD-API-002#check_signals]]
-
-#### RulesService.criteria 규칙표
-
-**시그니처** `criteria() -> dict`
-
-**처리** 코드의 규칙 상수(경계·신호·필수 검토·가격 순서·최우선변제금·기준일·출처)를 JSON으로
-
-**테스트 관점** PRD R5·R6·R11과 일치 (스냅샷 테스트)
-
-### 2.5 lookup
-
-#### LookupService.price 실거래가
-
-**시그니처** `price(address, building_type, building_name|None, area_m2|None) -> PriceResult`
+근거: [[JSD-SEQ-001#SEQ-10]] · [[JSD-API-001#PATCH/api/reviews/{id}/values]] · [[JSD-UC-001#UC-A1]] 8a
 
 **처리**
-1. `key = cache("price", args)` → hit 반환
-2. `lawd = region_code(address)` · 없음 → `ToolError("no_region_code")`
-3. 건물 종류별 API 12개월 호출(5s 타임아웃, 재시도 1) → 실패 `api_failed`
-4. `건물명 일치 and |면적-area| ≤ 3%` 필터 · 0건 → `ToolError("no_trades")`
-5. `평균, 건수, 기간` 캐시 저장(24h) 후 반환
+1. `review = DB: reviews where id` · if 없음 → `! not_found` · if expired → `! gone`
+2. if `review.status != done` → `! wrong_state` · if 열린 차례 있음 → `! wrong_state`
+3. if `price_manwon`도 `entries`도 없음 → `! missing_input(field price_manwon)` · if `price_manwon < 1` → `! missing_input(field price_manwon)`
+4. if `entries` → `known = RegistryService.entries(review_id, [e.entry_id])` · if 모르는 ID가 하나라도 있음 → `! missing_input(field entries)`
+5. `DB: reviews facts.overrides` — 이전 값에 덮어 합친다(`price_manwon`은 새 값, `entries`는 `entry_id`별로 새 값)
+6. `record(user, say, "직접 입력: " + money.format_manwon 목록)` — 금액만 쓰고 이름은 넣지 않는다
+7. `write_report(review_id, None, "직접 입력")` — 새 의견서 카드까지 남긴다
+8. `→ ReportService.get(review_id)`
 
-**테스트 관점** 캐시 히트, 코드 없음, 0건, XML 파싱 (녹화된 응답으로)
+**예외** `not_found` 행 없음 · `gone` 만료 · `missing_input` 값 없음, 모르는 entry_id · `wrong_state` done 아님, 열린 차례
 
-근거: [[JSD-UC-001#UC-S4]] · [[JSD-API-002#lookup_price]]
+**테스트 관점** 가격 5억 입력 → `price_source user_input`, 부채비율 갱신, `revision_no` 1 오름, report 메시지 1개 추가 · 모르는 `entry_id` → 400, facts 그대로 · 두 번 입력하면 뒤 값 · LLM 비용 한도에 닿았으면 `llm_fallback` true
 
-#### LookupService.building 건축물대장
+---
 
-**시그니처** `building(address) -> BuildingResult`
+#### ReviewService.ask 질문을 내고 답을 기다린다
 
-**처리** 캐시 → 건축HUB 표제부 조회(5s, 재시도 1) → 여러 건이면 건물명 유사도로 선택 + `multiple_candidates=True` → 캐시
+**시그니처** `ask(review_id: str, args: AskArgs) -> AskAnswer`
 
-**테스트 관점** 여러 동, 실패 사유
-
-#### LookupService.defaulter 명단 대조
-
-**시그니처** `defaulter(name) -> DefaulterResult`
-
-**처리** `select hug_defaulters where name = :name` · 스냅샷 없음 → `ToolError("no_snapshot")` · 항상 `note="동명이인 가능"`
-
-**테스트 관점** 완전 일치만, 스냅샷 없음
-
-### 2.6 report
-
-#### ReportService.write 의견서 작성
-
-**시그니처** `write(session, registry, rights, signals, grade, answers, review_log, agent_notes|None, rebuild=False) -> Report`
+근거: [[JSD-SEQ-001#SEQ-7]] · [[JSD-API-002#ask_user]] · [[JSD-UC-001#UC-S7]] · [[JSD-UC-001#UC-A3]] 2a·2c·3a
 
 **처리**
-1. `checked = 검토 항목 목록(Q37 계약 전 항목) × (시도됨 → ok / 답 unknown·도구 실패 → unknown / 해당 없음 → n_a)`
-2. `todos = select_todos(building_type, signals, grade.unknowns)` — 규칙표(계약 전·당일·잔금·입주 후) 상수에서 조건 일치 항목
-3. `clauses = [standard_1, standard_2] + (standard_3 if multi_household or 체납 unknown) + (mortgage_release if 근저당) + (insurance_condition if grade != safe) + (owner_change_notice if frequent_transfer) + (tax_consent if 체납 unknown)`; 빈칸 채움(보증금·날짜·채권자)
-4. `llm = openai.chat(결론 1문장 + 신호별 쉬운 설명 + 질문 3~5개; 입력은 등급·수치·신호만; "숫자·등급 변경 금지")` · 실패 1회 재시도 · 그래도 실패 → 템플릿 문장, `llm_fallback=True`
-5. `report = Report(...)`; `corrections = verify_numbers(report, rights, grade)`
-6. `notices = 고정 3개`
-7. `insert/update reports`
+1. 짧은 트랜잭션
+   1. `n = DB: questions count where review_id` · if `n ≥ LIMITS.questions` → `! question_limit`
+   2. if `args.kind in (illegal_building, proxy, owner_type)` → `options = 고정 선택지 라벨`, `input_type choice` · `help_url`은 illegal_building이면 정부24 확인 방법
+   3. `qid = DB: questions insert (asked_no n+1, kind, text, why, input_type, options, help_url, pending)`
+   4. `record(agent, question, args.text, Question DTO)` · `DB: reviews status waiting_user`
+2. 반복 — 1초마다 새 세션으로 `q = DB: questions where id = qid`
+   - if `q` 없음 → `! not_found` (검토 삭제. 루프가 조용히 멈춘다)
+   - if `q.status answered` → 3
+   - if 경과 ≥ `LIMITS.answer_timeout_sec` → `DB: questions set status timeout, answer unknown` · `record(system, notice, "답변 없이 진행합니다", NoticeData(answer_timeout))` → 3
+3. `DB: reviews status running` → `→ AskAnswer(qid, q.answer, q.answer_document_id)`
 
-**출력** Report
+**예외** `question_limit` 질문 5개 · `not_found` 기다리는 중 삭제
 
-**테스트 관점** todos 선택 규칙(다가구·근저당·unknown), 특약 빈칸 채움, LLM 실패 폴백, 후검증 교정
+**테스트 관점** 여섯 번째 질문 → question_limit, 행 없음 · 답이 오면 1초 안에 돌아온다 · 시간 가짜로 300초 → `unknown`, notice 1개 · 기다리는 중 `cancel` → 300초를 기다리지 않고 not_found · 기다리는 동안 DB 세션이 열려 있지 않다
 
-근거: [[JSD-UC-001#UC-S8]] · [[JSD-API-002#write_report]]
+---
 
-#### ReportService.verify_numbers 후검증
+#### ReviewService.record 대화 메시지 하나를 쌓는다
 
-**시그니처** `verify_numbers(report, rights, grade) -> int`
+**시그니처** `record(review_id: str, role: Role, kind: MessageKind, text: str, data: dict | None = None, turn_id: int | None = None, message_id: str | None = None) -> str`
+
+근거: [[JSD-SEQ-001#SEQ-3]] · [[JSD-DOM-003]] 4장 2
+
+**처리** — 부른 쪽 트랜잭션이 있으면 그 안, 없으면 짧은 트랜잭션
+1. `DB: reviews where id for update` · if 없음 → `! not_found`. 행 잠금이 같은 검토의 `seq` 쓰기를 한 줄로 세운다 — 루프와 `receive`가 동시에 쌓아도 seq가 겹치지 않는다
+2. if `role in (agent, user)` → `text = privacy.mask_text(text, holder_names + [counterparty_name])`
+3. `seq = DB: max(seq) where review_id` + 1 (없으면 1)
+4. `DB: review_records insert (id = message_id 또는 새 uuid, seq, role, kind, text, data, turn_id)`
+5. `→ id`
+
+**테스트 관점** 두 코루틴이 동시에 100개씩 → seq 1~200 빈틈·중복 없음 · 미리 정한 `message_id`로 쌓인다 · 지워진 검토 → not_found · 에이전트 문장 속 이름이 라벨로 바뀐다
+
+---
+
+#### ReviewService.owner_matches 소유자와 계약 상대방이 같은지
+
+**시그니처** `owner_matches(review_id: str) -> bool | None`
+
+근거: [[JSD-SEQ-001#SEQ-4]] · [[JSD-API-002]] 1.3
+
+**처리** `owner = RegistryService.owner(review_id)` · `name = DB: reviews.counterparty_name` · if 둘 중 하나 없음 → `None` · else → 공백을 모두 뺀 두 문자열이 같으면 `True`, 아니면 `False`. 이름은 반환하지 않는다
+
+**테스트 관점** "홍 길동" · "홍길동" → True · 상대방 이름 없음 → None · 소유자가 법인이고 상대방이 개인 → False
+
+---
+
+#### ReviewService.summarize_and_store 합산을 내고 facts에 둔다
+
+**시그니처** `summarize_and_store(review_id: str) -> RightsSummary`
+
+근거: [[JSD-SEQ-001#SEQ-5]] · [[JSD-API-002#summarize_rights]] · [[JSD-UC-001#UC-S2]]
+
+**처리** `inp = rights_input(review_id)` → `rights = RulesService.summarize(inp)` → 짧은 트랜잭션 `DB: reviews facts.rights = rights` → `→ rights`. numbers 메시지는 루프가 남긴다
+
+**테스트 관점** 직접 입력 가격이 있으면 실거래가보다 앞선다(`rules` 순서) · 같은 facts면 같은 결과
+
+---
+
+#### ReviewService.check_and_store 합산을 다시 낸 뒤 신호·등급을 facts에 둔다
+
+**시그니처** `check_and_store(review_id: str) -> SignalCheck`
+
+근거: [[JSD-SEQ-001#SEQ-5]] · [[JSD-API-002#check_signals]] · [[JSD-UC-001#UC-S3]]
 
 **처리**
-1. 결론·설명 문장에서 금액(억·천·만원)·백분율·등급어 추출
-2. `if 금액 ∉ {rights의 값들} or 비율 ≠ round(debt_ratio) or 등급어 ≠ grade → 해당 문장을 템플릿 문장으로 교체, corrections += 1`
-3. 반환 corrections
+1. `summarize_and_store(review_id)` — 합산 전이거나 합산 뒤 시세·답이 바뀌었어도 신호가 옛 합산에 기대지 않는다
+2. `inp = signal_input(review_id)` → `check = RulesService.check(inp)`
+3. 짧은 트랜잭션 `DB: reviews facts.check = check`
+4. `→ check`
 
-**테스트 관점** 숫자 바뀐 문장 교체, 정상 문장 통과, 단위 변환(1억 2천 = 12000만원)
+**테스트 관점** summarize를 부른 적 없이 불러도 `rights`가 채워진다 · 합산 뒤 시세가 facts에 들어오면 부채비율 신호가 새 가격으로 나온다
 
-#### ShareService.create 공유본
+---
 
-**시그니처** `create(session_id) -> ShareResult`
+#### ReviewService.write_report 합산·신호·의견서를 다시 내고 카드를 남긴다
 
-**처리** `report = load` → `masked = mask(report)` (holder 이름, 주민번호 패턴, 주소 동 이하, review_log·evidence 제거) → `token = secrets(22)` → `insert shares(expires=now+7d)`
+**시그니처** `write_report(review_id: str, agent_notes: str | None, revision_reason: str | None) -> ReportResult`
 
-**테스트 관점** 마스킹 필드 전부, 만료
+근거: [[JSD-SEQ-001#SEQ-8]] · [[JSD-API-002#write_report]] · [[JSD-UC-001#UC-S8]] · [[JSD-UC-001#UC-A1]] 6~7
+
+**처리**
+1. `names = holder_names + [counterparty_name]` · `agent_notes = mask_text(agent_notes, names)` · `revision_reason = mask_text(revision_reason, names)` (있을 때)
+2. `check_and_store(review_id)` — 합산을 포함한다
+3. `inp = report_input(review_id)`
+4. `result = ReportService.write(review_id, inp, agent_notes, revision_reason)` — 문장 생성은 그 안에서 트랜잭션 밖, 인용·의견서 덮기는 한 트랜잭션
+5. 짧은 트랜잭션
+   1. `llm_krw = infra.openai.usage_krw(result.tokens_in, result.tokens_out)`
+   2. `DB: reviews corrections += result.corrections, tokens_in += result.tokens_in, tokens_out += result.tokens_out, llm_cost_krw += llm_krw, cost_krw += llm_krw`
+   3. `record(agent, report, "", ReportCard(grade, signal_count, unknown_count, rule_version, revision_no, revision_reason))`
+6. `→ result`
+
+**출력** `ReportResult`. 루프는 요약만 모델에 돌려준다
+
+**호출하는 것** [[#ReviewService.check_and_store]] · [[#ReviewService.report_input]] · `ReportService.write` · `infra.openai.usage_krw` · [[#ReviewService.record]] · `privacy.mask_text`
+
+**테스트 관점** 첫 호출 → `revision_no` 1, report 메시지 1개 · 다시 부르면 `revision_no` 2, 메시지 2개 · 가짜 문장 생성기가 토큰 100을 돌려주면 `llm_cost_krw`가 그만큼 오른다 · `revision_reason` 속 이름이 라벨로 저장된다
+
+---
+
+#### ReviewService.finish 상태를 닫고 사용량을 갱신
+
+**시그니처** `finish(review_id: str, status: ReviewStatus) -> None`
+
+근거: [[JSD-SEQ-001#SEQ-2]] · [[JSD-SEQ-001#SEQ-9]] · [[JSD-INFRA-001#C3]]
+
+**처리** — 짧은 트랜잭션
+1. `review = DB: reviews where id for update` · if 없음 → 아무것도 하지 않고 끝(삭제된 검토)
+2. `DB: reviews set status, finished_at now` — 되묻기 차례 끝이면 `status`는 done 그대로
+3. `llm_fallback = ReportService.get(review_id).llm_fallback` if `ReportService.exists` else False
+4. `DB: usage_logs upsert on conflict (review_id)` — `is_sample = review.sample_id is not None`, `status`, `tool_calls`, `tokens_in`, `tokens_out`, `parsed_pages`, `cost_krw`, `corrections`, `llm_fallback`, `updated_at now`
+
+**테스트 관점** 두 번 불러도 `usage_logs` 한 행 · 지워진 검토 → 예외 없이 끝 · failed로 닫으면 usage에도 failed
+
+---
+
+#### ReviewService.require_live 검토 경로의 404·410 판정
+
+**시그니처** `require_live(review_id: str) -> None`
+
+근거: [[JSD-SEQ-001#SEQ-C2]] · [[JSD-DOM-002]] 5장 결정 7
+
+**처리** `DB: reviews.status where id` · if 없음 → `! not_found` · if expired → `! gone` · else → 통과. `main.py`가 registry·citation·report·share 검토 경로 라우터에 의존성으로 건다
+
+**테스트 관점** 없는 ID로 원문 보기 → 404 · 만료 검토의 인용 역조회 → 410 · 공유본 보기에는 걸리지 않는다
+
+---
+
+#### ReviewService.rights_input 합산 입력 채우기
+
+**시그니처** `rights_input(review_id: str) -> RightsInput`
+
+근거: [[JSD-API-002]] 1.2 · [[JSD-DOM-002]] 2.8 RightsInput
+
+**처리**
+1. `review = DB: reviews` · `facts = ReviewFacts(review.facts)`
+2. `entries = RegistryService.entries(review_id)` · `labels = privacy.person_labels(RegistryService.holder_names(review_id))`
+3. 항목마다 `EntryFact` — `holder`는 법인이면 그대로, 아니면 `labels[holder]`
+4. `prop = RegistryService.property(review_id)`
+5. `→ RightsInput(entries, deposit_manwon, building_type = prop.building_type, region = prop.region, override_price_manwon = facts.overrides.price_manwon, trade_price_manwon = facts.price.price_manwon, user_price_manwon = facts.stated.price_manwon, other_tenants_manwon = facts.stated.other_tenants_manwon 또는 tenants 답에서 뽑은 금액, vacant_rooms = facts.stated.vacant_rooms, amount_overrides = facts.overrides.entries를 dict로, today)`
+
+**테스트 관점** 항목의 개인 이름이 라벨로 바뀐다 · facts가 비었으면 가격 후보 셋이 모두 None · tenants 답 "보증금 합계 1억 2천" → `other_tenants_manwon` 12000
+
+---
+
+#### ReviewService.signal_input 신호 입력 채우기
+
+**시그니처** `signal_input(review_id: str) -> SignalInput`
+
+근거: [[JSD-API-002#check_signals]] · [[JSD-DOM-002]] 2.8 SignalInput
+
+**처리**
+1. `facts` · `entries`(가린 `EntryFact`, rights_input 2~3과 같다) · `prop = RegistryService.property` → `PropertyFact`
+2. `answers = facts.answers` · `proxy_status = ProxyStatus(answers.proxy)` · `illegal_building = IllegalBuilding(answers.illegal_building)` · `owner_type = OwnerType(answers.owner_type)` — 답이 없으면 각각 `unknown`
+3. `→ SignalInput(entries, property, rights = facts.rights, owner_matches_counterparty = owner_matches(review_id), proxy_status, illegal_building, owner_type, ledger_main_use = facts.building.main_use, defaulter_matched = facts.defaulter.matched, tenants_answered = "tenants" in answers, failures = facts.failures의 도구 이름 목록, untried = facts.untried, today)`
+
+**테스트 관점** 대리 질문을 안 했으면 `proxy_status unknown` · `facts.rights`는 [[#ReviewService.check_and_store]]가 먼저 채워 None이 아니다
+
+---
+
+#### ReviewService.report_input 의견서 입력 채우기
+
+**시그니처** `report_input(review_id: str) -> ReportInput`
+
+근거: [[JSD-API-002#write_report]] · [[JSD-PRD-001#R10]]
+
+**처리** `facts` · `prop = RegistryService.property`에서 내부 필드(`lot_address` `exclusive_area_m2` `building_name`)를 뺀 사본 · `entries = RegistryService.entries`에서 개인 `holder`를 라벨로 바꾼 사본 → `→ ReportInput(rights = facts.rights, check = facts.check, property, deposit_manwon, contract_type, answers = facts.answers, entries, use_model = review.llm_cost_krw < LIMITS.cost_krw)`
+
+**테스트 관점** 개인 이름이 입력 어디에도 없다 · `llm_cost_krw`가 한도와 같으면 `use_model` false
+
+---
+
+#### ReviewService.purge_expired 보관 기간이 지난 검토를 비운다
+
+**시그니처** `purge_expired(now: datetime) -> int`
+
+근거: [[JSD-SEQ-001#SEQ-16]] · [[JSD-UC-001#UC-A1]] 9 · [[JSD-DOM-002]] 5장 결정 4
+
+**처리**
+1. `ids = DB: reviews.id where expires_at < now and status != expired`
+2. id마다 트랜잭션 하나 — 하나가 실패해도 다음으로 간다(로그에 id와 코드만)
+   1. `hashes = RegistryService.delete_for_review(id)` · 해시마다 `gate.forget` · `CitationService.delete_for_review(id)` · `ReportService.delete_for_review(id)`
+   2. `DB: review_records · questions · follow_up_turns delete where review_id`
+   3. `DB: reviews set counterparty_name null, facts {}, status expired`
+3. `→` 비운 검토 수
+
+**테스트 관점** 25시간 지난 검토 → 딸린 행 0, `reviews` 행은 expired로 남는다 · 같은 시각에 두 번 돌려도 두 번째는 0 · 23시간 된 검토는 그대로
+
+---
+
+#### ReviewService.warm_samples 예시 3건의 파싱 캐시를 채운다
+
+**시그니처** `warm_samples() -> int`
+
+근거: [[JSD-SEQ-001#SEQ-18]] · [[JSD-UC-001#UC-A2]] 4a
+
+**처리** `SampleService.list()`의 예시마다 `upload = SampleService.file(id)` → `check = gate.check_file(upload)` → if `gate.cached_html(check.file_sha256)` 없음 → `parsed = RegistryService.parse(upload.data, check.media_type)` · else → 캐시 값 → `gate.remember_html(hash, html, page_count, is_sample True)` → 채운 수. 검토를 만들지 않는다
+
+**테스트 관점** 빈 캐시 → 3, 파서 3회 · 다시 돌리면 파서 0회, `expires_at` null 유지
+
+---
+
+#### ReviewService.usage_report 하루치 사용량 요약
+
+**시그니처** `usage_report(day: date) -> UsageSummary`
+
+근거: [[JSD-INFRA-001#C3]] · [[JSD-INFRA-001]] 8장 비용 점검
+
+**처리** `DB: usage_logs where updated_at이 day(Asia/Seoul) 안` → `reviews = count`, `failed = count where status failed`, `avg_cost_krw = avg(cost_krw)`(없으면 0) → `UsageSummary`. 한도 비교와 경고 로그는 `jobs.py`가 한다
+
+**테스트 관점** 행이 없는 날 → 0·0·0 · 자정 직전(KST) 갱신 행은 그날로 센다
+
+---
 
 ## 3. 미결사항
 
-- [ ] `region(주소) → 최우선변제금 지역` 매핑 상수 (과밀억제권역 시군구 목록) — 출처·기준일 명시
-- [ ] `scrub_pii` 규칙 (이름 패턴은 등기부 holder 목록으로, 주민번호는 정규식)
-- [ ] `select_todos` 규칙표 상수의 전체 목록 — RFQ Q37을 그대로 코드화
-- [ ] OpenAI 호출 헬퍼의 재시도·타임아웃 기본값
+- [ ] `PRICES.parse_page_krw`의 값 — [[JSD-INFRA-001]] 8장 추정($0.01 × 1,350원 ≈ 14원)을 쓴다. 업스테이지 실제 청구 단가로 확인한다
+- [ ] tenants 질문 답 하나에 가구 수·보증금 합계를 함께 받는다([[JSD-PRD-001#R8]]). 지금은 답 문장에서 `factcheck.amounts`로 금액만 뽑고 빈 방 수는 대화에서 말한 값만 쓴다. 질문을 둘로 나눌지
+- [ ] `usage_logs.is_sample`은 `sample_id`로만 채운다. 예시 파일을 직접 올린 검토는 예시로 세지 않는다([[JSD-DOM-003]] 5장 되먹임 — 이 문서의 선택)
+- [ ] `usage_report`의 날짜 경계를 KST로 두었다. `updated_at`은 되묻기 끝에 다시 쓰여 검토가 날짜를 옮길 수 있다([[JSD-DOM-003]] 5장)
+- [ ] `stream`의 주기 1초와 `ask`의 1초 폴링 — 동시 검토 수만큼 DB를 읽는다. 첫 구현에서 잰다([[JSD-SEQ-001]] 미결)
+- [ ] 재시작 때 running·waiting_user로 남은 검토를 failed로 닫는 함수는 두지 않았다([[JSD-DOM-002]] 7장 미결)
