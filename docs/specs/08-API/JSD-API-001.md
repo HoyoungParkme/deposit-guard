@@ -117,6 +117,7 @@ Error:
     responses:
       204: {}
       404: not_found
+      410: gone          # 이미 만료됨. 남은 만료 행은 지우지 않는다
 ```
 
 ### 3.2 대화
@@ -265,7 +266,8 @@ Error:
         price_manwon: { type: integer, nullable: true }
         entries: [{ entry_id: string, amount_manwon: integer }]
     responses:
-      200: Report        # 갱신된 의견서. 대화에는 "직접 입력" 메시지가 남는다
+      200: Report        # 갱신된 의견서. 대화에는 "직접 입력" 메시지와 새 의견서 카드가 남는다
+      400: missing_input # 이 검토의 등기부에 없는 entry_id (field entries)
       409: wrong_state   # 검토가 끝나지 않음
 ```
 
