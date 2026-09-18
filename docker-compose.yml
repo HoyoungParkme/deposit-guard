@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://jsd:jsd@db:5432/jsd
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-5.6-terra}
+      - UPSTAGE_API_KEY=${UPSTAGE_API_KEY:-}
+      - UPSTAGE_ENDPOINT_ID=${UPSTAGE_ENDPOINT_ID:-}
+      - DATA_GO_KR_KEY=${DATA_GO_KR_KEY:-}
+      - HUG_DEFAULTERS_URL=${HUG_DEFAULTERS_URL:-https://www.khug.or.kr/hug/web/ig/dr/igdr000001.jsp}
+      - APP_SECRET=${APP_SECRET:-dev-secret}
+      - APP_VERSION=${APP_VERSION:-0.1.0}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: jsd
+      POSTGRES_PASSWORD: jsd
+      POSTGRES_DB: jsd
+    ports:
+      - "55432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d deposit_guard"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* JSD-UI-001 4.1 디자인 토큰 */
+  --bg: #FFFFFF;
+  --fg: #1A1A1A;
+  --muted: #6B7280;
+  --line: #E5E7EB;
+  --primary: #1D4ED8;
+  --safe: #15803D;
+  --safe-bg: #DCFCE7;
+  --caution: #B45309;
+  --caution-bg: #FEF3C7;
+  --danger: #B91C1C;
+  --danger-bg: #FEE2E2;
+  --highlight: #FDE68A;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
