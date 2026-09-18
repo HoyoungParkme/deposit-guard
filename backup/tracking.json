@@ -4,15 +4,135 @@
   "flags": [
     {
       "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Question",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.651636+00:00",
+      "resolved_at": "2026-09-17T07:30:59.229816+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": false,
+      "target": "JSD-API-002#ask_user",
+      "target_version": "JSD-API-002@8815ae3c4ddee12409dce61a8393eff66ba19fe0"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#RegistryEntry",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.648608+00:00",
+      "resolved_at": "2026-09-17T07:30:58.877057+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": false,
+      "target": "JSD-API-002#read_registry",
+      "target_version": "JSD-API-002@8815ae3c4ddee12409dce61a8393eff66ba19fe0"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.654853+00:00",
+      "resolved_at": "2026-09-17T07:30:59.584047+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": false,
+      "target": "JSD-API-002#write_report",
+      "target_version": "JSD-API-002@8815ae3c4ddee12409dce61a8393eff66ba19fe0"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Review",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.618556+00:00",
+      "resolved_at": "2026-09-17T07:30:55.419456+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#ChecklistItem",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.620034+00:00",
+      "resolved_at": "2026-09-17T07:30:55.762653+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#ChecklistItem",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.628736+00:00",
+      "resolved_at": "2026-09-17T07:30:56.813481+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#Grade",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#RegistryEntry",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.606462+00:00",
+      "resolved_at": "2026-09-17T07:30:54.320333+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#Owner",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Review",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.610236+00:00",
+      "resolved_at": "2026-09-17T07:30:54.676162+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#PlannedLease",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
       "cause": null,
       "cause_version": "JSD-UI-001@81b151cf1a50c9453d4f013c2f1279562dcba82c",
       "kind": "upstream_impact",
       "raised_at": "2026-09-16T09:01:27.709304+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:57.578528+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-DOM-001#Question",
       "target_version": "JSD-DOM-001@0b8ea5483ab134b32d473c52c8097ee869283eb5"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#RegistryEntry",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.600349+00:00",
+      "resolved_at": "2026-09-17T07:30:53.588321+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#RegistryExtract",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Review",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.602396+00:00",
+      "resolved_at": "2026-09-17T07:30:53.950048+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#RegistryExtract",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
     },
     {
       "assignee": "HoyoungParkme",
@@ -20,11 +140,83 @@
       "cause_version": "JSD-UI-001@81b151cf1a50c9453d4f013c2f1279562dcba82c",
       "kind": "upstream_impact",
       "raised_at": "2026-09-16T09:01:27.705778+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:57.262433+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-DOM-001#ReviewRecord",
       "target_version": "JSD-DOM-001@0b8ea5483ab134b32d473c52c8097ee869283eb5"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#RegistryEntry",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.624284+00:00",
+      "resolved_at": "2026-09-17T07:30:56.119136+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#RiskSignal",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Question",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.625372+00:00",
+      "resolved_at": "2026-09-17T07:30:56.464700+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#RiskSignal",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Review",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.639457+00:00",
+      "resolved_at": "2026-09-17T07:30:57.846196+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#SampleCase",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#RegistryEntry",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.614173+00:00",
+      "resolved_at": "2026-09-17T07:30:55.050877+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#SeniorClaim",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.636168+00:00",
+      "resolved_at": "2026-09-17T07:30:57.504446+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#SpecialClause",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.632349+00:00",
+      "resolved_at": "2026-09-17T07:30:57.158686+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-DOM-001#Todo",
+      "target_version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
     },
     {
       "assignee": "HoyoungParkme",
@@ -44,9 +236,9 @@
       "cause_version": "JSD-RFQ-001@87f55995c3111e6cae92781923de153548ab5ce3",
       "kind": "needs_check",
       "raised_at": "2026-09-15T05:46:37.047231+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:56.313971+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#N2",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
     },
@@ -56,9 +248,9 @@
       "cause_version": "JSD-UI-001@81b151cf1a50c9453d4f013c2f1279562dcba82c",
       "kind": "upstream_impact",
       "raised_at": "2026-09-16T09:01:27.698533+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:56.630936+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#R12",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
     },
@@ -68,9 +260,9 @@
       "cause_version": "JSD-RFQ-001@87f55995c3111e6cae92781923de153548ab5ce3",
       "kind": "needs_check",
       "raised_at": "2026-09-15T05:46:37.043391+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:56.002528+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#R13",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
     },
@@ -80,9 +272,9 @@
       "cause_version": "JSD-UI-001@81b151cf1a50c9453d4f013c2f1279562dcba82c",
       "kind": "upstream_impact",
       "raised_at": "2026-09-16T09:01:27.702791+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:56.938005+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#R13",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
     },
@@ -92,9 +284,9 @@
       "cause_version": "JSD-RFQ-001@87f55995c3111e6cae92781923de153548ab5ce3",
       "kind": "needs_check",
       "raised_at": "2026-09-15T05:46:37.037731+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:55.350575+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#R2",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
     },
@@ -104,11 +296,35 @@
       "cause_version": "JSD-RFQ-001@87f55995c3111e6cae92781923de153548ab5ce3",
       "kind": "needs_check",
       "raised_at": "2026-09-15T05:46:37.039384+00:00",
-      "resolved_at": null,
-      "resolved_by": null,
-      "resolved_with_edit": null,
+      "resolved_at": "2026-09-17T08:41:55.684503+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
       "target": "JSD-PRD-001#R2",
       "target_version": "JSD-PRD-001@27af94ec8625dc130fa2456b513320bf393b98a1"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#Opinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.642634+00:00",
+      "resolved_at": "2026-09-17T07:30:58.186530+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-UI-001#UI-3",
+      "target_version": "JSD-UI-001@25202d37df2a15a3db951497d8555c31778be4fd"
+    },
+    {
+      "assignee": "HoyoungParkme",
+      "cause": "JSD-DOM-001#SharedOpinion",
+      "cause_version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf",
+      "kind": "needs_check",
+      "raised_at": "2026-09-17T06:48:56.645614+00:00",
+      "resolved_at": "2026-09-17T07:30:58.535251+00:00",
+      "resolved_by": "HoyoungParkme",
+      "resolved_with_edit": true,
+      "target": "JSD-UI-001#UI-5",
+      "target_version": "JSD-UI-001@25202d37df2a15a3db951497d8555c31778be4fd"
     }
   ],
   "project": "JSD",
@@ -120,9 +336,9 @@
       "changed": [
         "JSD-API-001#GET/api/reviews/{id}"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:56.979426+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-API-001@00275a36600926a06cac825b24dc531573068e8a"
     },
     {
@@ -137,10 +353,29 @@
         "JSD-API-001#POST/api/reviews",
         "JSD-API-001#POST/api/reviews/{id}/messages"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:59.361237+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-API-001@4b71ce4f49282a1293a0ecd8b4184452dbe1067a"
+    },
+    {
+      "affected": [
+        "JSD-API-002#summarize_rights",
+        "JSD-DOM-002#ReviewService",
+        "JSD-SEQ-001#SEQ-10",
+        "JSD-SEQ-001#SEQ-12",
+        "JSD-SEQ-001#SEQ-15",
+        "JSD-SEQ-001#SEQ-8",
+        "JSD-SEQ-001#SEQ-C2"
+      ],
+      "changed": [
+        "JSD-API-001#DELETE/api/reviews/{id}",
+        "JSD-API-001#PATCH/api/reviews/{id}/values"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:48:30.018680+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-API-001@83b4bb3d0aeb86176c69beeb0f81430f01ed1a90"
     },
     {
       "affected": [
@@ -153,9 +388,9 @@
         "JSD-API-002#check_signals",
         "JSD-API-002#summarize_rights"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:59.687066+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-API-002@8815ae3c4ddee12409dce61a8393eff66ba19fe0"
     },
     {
@@ -171,9 +406,9 @@
       "changed": [
         "JSD-DOM-001#Citation"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:58.682167+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-DOM-001@63eeec72211f291551a06cac41f4a499c88291cf"
     },
     {
@@ -181,9 +416,9 @@
       "changed": [
         "JSD-DOM-001#review_sessions"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:43:34.017510+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-DOM-001@c6ad80f5e365e9f8846c9e9e9a9c265788aa50d3"
     },
     {
@@ -214,10 +449,276 @@
         "JSD-DOM-001#ReviewRecord",
         "JSD-DOM-001#SharedOpinion"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "propagate",
+      "decided_at": "2026-09-17T06:48:56.594258+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-DOM-001@d9c89f7857d9e08c84dc30abf23541cb2679d3bf"
+    },
+    {
+      "affected": [
+        "JSD-API-002#check_signals",
+        "JSD-API-002#write_report",
+        "JSD-DOM-001#BuildingLedger",
+        "JSD-DOM-001#Citation",
+        "JSD-DOM-001#DefaulterRecord",
+        "JSD-DOM-001#FollowUpTurn",
+        "JSD-DOM-001#Grade",
+        "JSD-DOM-001#OfficialCriterion",
+        "JSD-DOM-001#Question",
+        "JSD-DOM-001#RegistryEntry",
+        "JSD-DOM-001#Review",
+        "JSD-DOM-001#ReviewRecord",
+        "JSD-DOM-001#SharedOpinion",
+        "JSD-DOM-001#Todo",
+        "JSD-DOM-001#UnknownItem",
+        "JSD-DOM-002#Opinion",
+        "JSD-DOM-002#ReportService",
+        "JSD-DOM-002#RulesService",
+        "JSD-UI-001#UI-3"
+      ],
+      "changed": [
+        "JSD-DOM-001#ChecklistItem",
+        "JSD-DOM-001#Opinion",
+        "JSD-DOM-001#RiskSignal",
+        "JSD-DOM-001#SpecialClause"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:30:31.956940+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-001@e2e59f151ea773b3a444cd515aedb80d1cda9190"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-MS-001#ReviewService.cancel",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.parse_upload",
+        "JSD-MS-001#ReviewService.purge_expired",
+        "JSD-MS-001#ReviewService.receive",
+        "JSD-MS-001#ReviewService.require_live",
+        "JSD-MS-001#ReviewService.rights_input",
+        "JSD-MS-001#ReviewService.signal_input",
+        "JSD-MS-002#service_agent.check_stated",
+        "JSD-MS-002#service_agent.dispatch",
+        "JSD-MS-002#service_agent.run_tools",
+        "JSD-MS-003#RegistryService.delete_for_review",
+        "JSD-MS-004#service_parse.clean_html",
+        "JSD-MS-004#service_parse.purpose_code",
+        "JSD-MS-004#service_parse.read_holder",
+        "JSD-MS-004#service_parse.read_rows",
+        "JSD-MS-004#service_parse.split_blocks",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#LookupService"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:40:11.782207+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@1da58b8e5cfe5179daf7b00ea1dbdc8829395b12"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#citations",
+        "JSD-DOM-003#defaulter_records",
+        "JSD-DOM-003#file_caches",
+        "JSD-DOM-003#follow_up_turns",
+        "JSD-DOM-003#ip_quotas",
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#opinions",
+        "JSD-DOM-003#questions",
+        "JSD-DOM-003#region_codes",
+        "JSD-DOM-003#registry_entries",
+        "JSD-DOM-003#registry_extracts",
+        "JSD-DOM-003#review_records",
+        "JSD-DOM-003#reviews",
+        "JSD-DOM-003#shared_opinions",
+        "JSD-DOM-003#usage_logs"
+      ],
+      "changed": [
+        "JSD-DOM-002#Citation",
+        "JSD-DOM-002#DefaulterRecord",
+        "JSD-DOM-002#FileCache",
+        "JSD-DOM-002#FollowUpTurn",
+        "JSD-DOM-002#IpQuota",
+        "JSD-DOM-002#LookupCache",
+        "JSD-DOM-002#Opinion",
+        "JSD-DOM-002#Question",
+        "JSD-DOM-002#RegionCode",
+        "JSD-DOM-002#RegistryEntry",
+        "JSD-DOM-002#RegistryExtract",
+        "JSD-DOM-002#Review",
+        "JSD-DOM-002#ReviewRecord",
+        "JSD-DOM-002#SharedOpinion",
+        "JSD-DOM-002#UsageLog"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:21:52.928712+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@4cef4050054267e40060e5985ae182123396d410"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#opinions",
+        "JSD-DOM-003#registry_entries"
+      ],
+      "changed": [
+        "JSD-DOM-002#LookupCache",
+        "JSD-DOM-002#LookupService",
+        "JSD-DOM-002#Opinion"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:30:32.592707+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@7aca56eb4ad0859d0648b89e3aad758b9d24fbcb"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#RegistryService"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:07:47.296831+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@832cb3d950ae102319078d8333c4f100b65efd20"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#LookupService",
+        "JSD-DOM-002#ReportService",
+        "JSD-DOM-002#ReviewService"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:48:30.018681+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@9529e5e6a014dcda77bda616bc46ea9a4e77d202"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-DOM-003#registry_extracts",
+        "JSD-MS-001#ReviewService.cancel",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.parse_upload",
+        "JSD-MS-001#ReviewService.purge_expired",
+        "JSD-MS-001#ReviewService.receive",
+        "JSD-MS-001#ReviewService.require_live",
+        "JSD-MS-001#ReviewService.rights_input",
+        "JSD-MS-001#ReviewService.signal_input",
+        "JSD-MS-002#service_agent.check_stated",
+        "JSD-MS-002#service_agent.dispatch",
+        "JSD-MS-002#service_agent.run_tools",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#RegistryExtract",
+        "JSD-DOM-002#RegistryService"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:17:40.006296+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@a16970b3c2157f4a295cca163db8a3488bdaad2a"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-MS-001#ReviewService.cancel",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.parse_upload",
+        "JSD-MS-001#ReviewService.purge_expired",
+        "JSD-MS-001#ReviewService.receive",
+        "JSD-MS-001#ReviewService.require_live",
+        "JSD-MS-001#ReviewService.rights_input",
+        "JSD-MS-001#ReviewService.signal_input",
+        "JSD-MS-002#service_agent.check_stated",
+        "JSD-MS-002#service_agent.dispatch",
+        "JSD-MS-002#service_agent.run_tools",
+        "JSD-MS-003#RegistryService.delete_for_review",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#RegistryEntry"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:22:00.220217+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@c39ed32603553383add149fca6c9e7f2153b3008"
+    },
+    {
+      "affected": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#registry_entries",
+        "JSD-MS-001#ReviewService.cancel",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.parse_upload",
+        "JSD-MS-001#ReviewService.purge_expired",
+        "JSD-MS-001#ReviewService.receive",
+        "JSD-MS-001#ReviewService.require_live",
+        "JSD-MS-001#ReviewService.rights_input",
+        "JSD-MS-001#ReviewService.signal_input",
+        "JSD-MS-002#service_agent.check_stated",
+        "JSD-MS-002#service_agent.dispatch",
+        "JSD-MS-002#service_agent.run_tools",
+        "JSD-MS-003#RegistryService.delete_for_review",
+        "JSD-MS-004#service_parse.clean_html",
+        "JSD-MS-004#service_parse.purpose_code",
+        "JSD-MS-004#service_parse.read_holder",
+        "JSD-MS-004#service_parse.read_rows",
+        "JSD-MS-004#service_parse.split_blocks",
+        "JSD-MS-008#ReportService.template_sentences",
+        "JSD-MS-009#ShareService.purge_expired",
+        "JSD-SEQ-001#SEQ-15"
+      ],
+      "changed": [
+        "JSD-DOM-002#SampleService"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:40:12.106825+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-002@f40bb334319d97beed59c46d31654d7f029be65a"
+    },
+    {
+      "affected": [
+        "JSD-DOM-002#LookupCache",
+        "JSD-DOM-002#Opinion"
+      ],
+      "changed": [
+        "JSD-DOM-003#lookup_caches",
+        "JSD-DOM-003#opinions"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:30:32.913089+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-003@462632562a8f1a4803222a70eb294eb9e0706975"
+    },
+    {
+      "affected": [
+        "JSD-DOM-002#RegistryExtract",
+        "JSD-MS-001#ReviewService.record",
+        "JSD-SEQ-001#SEQ-16",
+        "JSD-SEQ-001#SEQ-3",
+        "JSD-SEQ-001#SEQ-9"
+      ],
+      "changed": [
+        "JSD-DOM-003#registry_extracts"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:17:40.315983+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-DOM-003@dd4635b5e6e06728af13ed847c6924ebc607d8b0"
     },
     {
       "affected": [
@@ -230,10 +731,25 @@
         "JSD-INFRA-001#C2",
         "JSD-INFRA-001#C7"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:58.351152+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-INFRA-001@46a9289eb6178e544b6a14ffc6d0f62b7a527bba"
+    },
+    {
+      "affected": [
+        "JSD-MS-001#ReviewService.stream"
+      ],
+      "changed": [
+        "JSD-MS-001#ReviewService.cancel",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.get",
+        "JSD-MS-001#ReviewService.override_values"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:08:55.985054+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-MS-001@4d521b64a66a814a70f962d005ae0953b2cba991"
     },
     {
       "affected": [],
@@ -247,9 +763,9 @@
         "JSD-MS-001#RulesService.check",
         "JSD-MS-001#RulesService.summarize"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:43:33.365809+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-MS-001@56c179649596fd7d3f1e3da382a3ca2409fe00ab"
     },
     {
@@ -271,10 +787,32 @@
         "JSD-PRD-001#R2",
         "JSD-PRD-001#R3"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:57.303229+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-PRD-001@6eb96355870a9b1c8033d6a6ad351a457491e10c"
+    },
+    {
+      "affected": [
+        "JSD-DOM-001#ReviewRecord",
+        "JSD-DOM-002#UsageLog",
+        "JSD-INFRA-001#C4",
+        "JSD-MS-002#service_agent.tool_summary",
+        "JSD-SCN-001#S1",
+        "JSD-SCN-001#S2",
+        "JSD-SCN-001#S4",
+        "JSD-UC-001#UC-A1",
+        "JSD-UC-001#UC-S9",
+        "JSD-UI-001#UI-2"
+      ],
+      "changed": [
+        "JSD-PRD-001#R12",
+        "JSD-PRD-001#R13"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:41:54.415545+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-PRD-001@e1566b0075a99bec67b35cc6727b78dc6653a2cf"
     },
     {
       "affected": [
@@ -316,10 +854,96 @@
         "JSD-SCN-001#S3",
         "JSD-SCN-001#S4"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:57.639423+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-SCN-001@b0d7199e721bef084bae52c6de6131051a62bb82"
+    },
+    {
+      "affected": [
+        "JSD-CODE-001#B1",
+        "JSD-CODE-001#B4",
+        "JSD-DOM-001#SampleCase",
+        "JSD-UC-001#UC-A2",
+        "JSD-UC-001#UC-S10",
+        "JSD-UI-001#UI-1",
+        "JSD-UI-001#UI-4"
+      ],
+      "changed": [
+        "JSD-SCN-001#S4"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:41:54.711598+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-SCN-001@b8f9bc0736a27aa143b4d6549b9fdc34a0a47bde"
+    },
+    {
+      "affected": [
+        "JSD-SEQ-001#SEQ-18"
+      ],
+      "changed": [
+        "JSD-SEQ-001#SEQ-1",
+        "JSD-SEQ-001#SEQ-10",
+        "JSD-SEQ-001#SEQ-15",
+        "JSD-SEQ-001#SEQ-17",
+        "JSD-SEQ-001#SEQ-2",
+        "JSD-SEQ-001#SEQ-5",
+        "JSD-SEQ-001#SEQ-7",
+        "JSD-SEQ-001#SEQ-8",
+        "JSD-SEQ-001#SEQ-9"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:48:30.192554+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-SEQ-001@47c0b0ff27c05d08d7c4b194e1be91aaaea8165a"
+    },
+    {
+      "affected": [
+        "JSD-API-001#POST/api/reviews",
+        "JSD-CODE-001#B1",
+        "JSD-CODE-001#B2",
+        "JSD-CODE-001#B3",
+        "JSD-DOM-001#PlannedLease",
+        "JSD-DOM-001#Review",
+        "JSD-DOM-002#CitationService",
+        "JSD-DOM-002#RegistryService",
+        "JSD-DOM-002#ReportService",
+        "JSD-DOM-002#ReviewService",
+        "JSD-MS-001#ReviewService.create",
+        "JSD-MS-001#ReviewService.override_values",
+        "JSD-MS-001#ReviewService.purge_expired",
+        "JSD-MS-001#ReviewService.write_report",
+        "JSD-MS-002#service_agent.say",
+        "JSD-MS-007#CitationService.resolve_markers",
+        "JSD-MS-011#gate.cached_html",
+        "JSD-MS-011#gate.check_file",
+        "JSD-MS-011#gate.take_quota",
+        "JSD-MS-014#factcheck.amounts",
+        "JSD-MS-015#jobs.purge",
+        "JSD-SEQ-001#SEQ-1",
+        "JSD-SEQ-001#SEQ-10",
+        "JSD-SEQ-001#SEQ-12",
+        "JSD-SEQ-001#SEQ-13",
+        "JSD-SEQ-001#SEQ-15",
+        "JSD-SEQ-001#SEQ-16",
+        "JSD-SEQ-001#SEQ-3",
+        "JSD-SEQ-001#SEQ-8",
+        "JSD-UC-001#UC-A2",
+        "JSD-UC-001#UC-A3",
+        "JSD-UC-001#UC-S1",
+        "JSD-UC-001#UC-S10",
+        "JSD-UC-001#UC-S9",
+        "JSD-UI-001#UI-1",
+        "JSD-UI-001#UI-2",
+        "JSD-UI-001#UI-3"
+      ],
+      "changed": [
+        "JSD-UC-001#UC-A1"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T08:41:55.017262+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-UC-001@212c305dc614fa69ca814497a10238575d8046f8"
     },
     {
       "affected": [
@@ -356,10 +980,38 @@
         "JSD-UC-001#UC-S10",
         "JSD-UC-001#UC-S9"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:57.974889+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-UC-001@64dd5a4bf9f00de235fe963040c0fc8f65465573"
+    },
+    {
+      "affected": [
+        "JSD-API-001#GET/api/reviews/{id}/stream",
+        "JSD-DOM-002#CitationService",
+        "JSD-DOM-002#ReportService",
+        "JSD-DOM-002#Review",
+        "JSD-DOM-002#ReviewService",
+        "JSD-DOM-002#RulesService",
+        "JSD-DOM-002#ShareService",
+        "JSD-INFRA-001#C5",
+        "JSD-SEQ-001#SEQ-11",
+        "JSD-SEQ-001#SEQ-14",
+        "JSD-SEQ-001#SEQ-2",
+        "JSD-SEQ-001#SEQ-3",
+        "JSD-SEQ-001#SEQ-8",
+        "JSD-UC-001#UC-A1",
+        "JSD-UI-001#UI-3",
+        "JSD-UI-001#UI-5"
+      ],
+      "changed": [
+        "JSD-UC-001#UC-A4",
+        "JSD-UC-001#UC-S9"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:48:29.401471+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-UC-001@b8a588517a5c6ae53fd1de8785912192716a7238"
     },
     {
       "affected": [
@@ -386,9 +1038,9 @@
         "JSD-UI-001#UI-2",
         "JSD-UI-001#UI-3"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:59.032969+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-UI-001@25202d37df2a15a3db951497d8555c31778be4fd"
     },
     {
@@ -416,10 +1068,62 @@
         "JSD-UI-001#UI-4",
         "JSD-UI-001#UI-5"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:56.249319+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-UI-001@53e6dea6ef773984a1b7f0098f082d93b1aac09f"
+    },
+    {
+      "affected": [
+        "JSD-API-001#DELETE/api/reviews/{id}",
+        "JSD-API-001#GET/api/reviews/{id}",
+        "JSD-API-001#GET/api/reviews/{id}/blocks/{blockId}",
+        "JSD-API-001#GET/api/reviews/{id}/documents",
+        "JSD-API-001#GET/api/reviews/{id}/documents/{documentId}",
+        "JSD-API-001#GET/api/reviews/{id}/messages",
+        "JSD-API-001#GET/api/reviews/{id}/report",
+        "JSD-API-001#GET/api/reviews/{id}/stream",
+        "JSD-API-001#PATCH/api/reviews/{id}/values",
+        "JSD-API-001#POST/api/reviews/{id}/messages",
+        "JSD-API-001#POST/api/reviews/{id}/shares",
+        "JSD-API-002#ask_user",
+        "JSD-API-002#write_report",
+        "JSD-UI-001#UI-1",
+        "JSD-UI-001#UI-4",
+        "JSD-UI-001#UI-5"
+      ],
+      "changed": [
+        "JSD-UI-001#UI-2",
+        "JSD-UI-001#UI-3"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:30:32.276027+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-UI-001@6f34b15733fc953a96d57a4daf980de1daafc1de"
+    },
+    {
+      "affected": [
+        "JSD-API-001#DELETE/api/reviews/{id}",
+        "JSD-API-001#GET/api/reviews/{id}",
+        "JSD-API-001#GET/api/reviews/{id}/blocks/{blockId}",
+        "JSD-API-001#GET/api/reviews/{id}/documents",
+        "JSD-API-001#GET/api/reviews/{id}/documents/{documentId}",
+        "JSD-API-001#GET/api/reviews/{id}/messages",
+        "JSD-API-001#GET/api/reviews/{id}/stream",
+        "JSD-API-001#POST/api/reviews/{id}/messages",
+        "JSD-API-002#ask_user",
+        "JSD-SEQ-001#SEQ-10",
+        "JSD-SEQ-001#SEQ-12",
+        "JSD-UI-001#UI-1",
+        "JSD-UI-001#UI-3"
+      ],
+      "changed": [
+        "JSD-UI-001#UI-2"
+      ],
+      "choice": "skip",
+      "decided_at": "2026-09-17T07:48:29.702722+00:00",
+      "decided_by": "HoyoungParkme",
+      "version": "JSD-UI-001@7e279fe692f204e46ae516c55df468790d8a887a"
     },
     {
       "affected": [
@@ -446,9 +1150,9 @@
         "JSD-UI-001#UI-4",
         "JSD-UI-001#UI-5"
       ],
-      "choice": "undecided",
-      "decided_at": null,
-      "decided_by": null,
+      "choice": "skip",
+      "decided_at": "2026-09-17T06:48:55.599335+00:00",
+      "decided_by": "HoyoungParkme",
       "version": "JSD-UI-001@d30b24eda2f6124d084ebc5b9c4e07a8135d163d"
     }
   ]
