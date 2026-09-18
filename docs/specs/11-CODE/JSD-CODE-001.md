@@ -20,7 +20,7 @@ upstream: [JSD-SCN-001, JSD-INFRA-001, JSD-DOM-002, JSD-DOM-003, JSD-API-001, JS
 
 **화면은 미니스펙이 없다.** 화면의 명세는 [[JSD-UI-001]]의 배치·요소·규칙·시나리오이고, 요소 번호를 컴포넌트의 `data-el`로 남긴다. 파일 자리는 [[JSD-DOM-002]] 1장 `frontend/`다.
 
-**진행 상황**: 카드 6장. 완료 0.
+**진행 상황**: 카드 6장. 완료 1.
 
 ---
 
@@ -38,7 +38,7 @@ upstream: [JSD-SCN-001, JSD-INFRA-001, JSD-DOM-002, JSD-DOM-003, JSD-API-001, JS
 | 화면 | 없음. `App.tsx` 경로 다섯과 빈 페이지 |
 | 테스트 | 구현 함수의 테스트 관점 전부 · 마이그레이션 up/down · 에러 봉투에 예외 문자열이 없다 · 로그 필터가 주민번호 형태를 지운다 · `docker compose up`으로 `/health` 200 |
 | 선행 | 없음 |
-| 완료 | — |
+| 완료 | 2026-09-18 · main · 커밋 c379453..f65eb7d (7개 커밋) · 단위 및 통합 테스트 28개 통과 · PostgreSQL 16 마이그레이션 up/down 성공 · Docker db 및 /health 200 검증 완료 |
 
 #### B1 등기부를 올리면 읽힌다
 
