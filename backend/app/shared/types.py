@@ -4,8 +4,10 @@
 규칙: DB·네트워크 없음. 아무것도 import하지 않는다.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date, datetime
 from enum import StrEnum
+
 
 
 # --- 2.9 열거형 ---
@@ -245,3 +247,423 @@ class ParsedDocument:
     html: str
     page_count: int
     billed_pages: int
+
+
+class PriceSource(StrEnum):
+    """JSD-DOM-002 PriceSource."""
+
+    trade_api = "trade_api"
+    registry_sale = "registry_sale"
+    user_input = "user_input"
+
+
+class SeniorKind(StrEnum):
+    """JSD-DOM-002 SeniorKind."""
+
+    mortgage = "mortgage"
+    jeonse_right = "jeonse_right"
+    lease_right = "lease_right"
+    tenant_deposit = "tenant_deposit"
+
+
+class LedgerKind(StrEnum):
+    """JSD-DOM-002 LedgerKind."""
+
+    general = "general"
+    collective = "collective"
+
+
+class ProxyStatus(StrEnum):
+    """JSD-DOM-002 ProxyStatus."""
+
+    self = "self"
+    proxy_with_poa = "proxy_with_poa"
+    proxy_without_poa = "proxy_without_poa"
+    unknown = "unknown"
+
+
+class IllegalBuilding(StrEnum):
+    """JSD-DOM-002 IllegalBuilding."""
+
+    yes = "yes"
+    no = "no"
+    unknown = "unknown"
+
+
+class OwnerType(StrEnum):
+    """JSD-DOM-002 OwnerType."""
+
+    individual = "individual"
+    corporation = "corporation"
+    unknown = "unknown"
+
+
+class CriteriaTopic(StrEnum):
+    """JSD-DOM-002 CriteriaTopic."""
+
+    grade = "grade"
+    signals = "signals"
+    debt_ratio = "debt_ratio"
+    required_checks = "required_checks"
+    price_order = "price_order"
+    priority_repayment = "priority_repayment"
+    limits = "limits"
+    sources = "sources"
+
+
+class ToolName(StrEnum):
+    """JSD-DOM-002 ToolName."""
+
+    read_registry = "read_registry"
+    summarize_rights = "summarize_rights"
+    check_signals = "check_signals"
+    lookup_price = "lookup_price"
+    lookup_building = "lookup_building"
+    match_defaulter = "match_defaulter"
+    ask_user = "ask_user"
+    get_criteria = "get_criteria"
+    write_report = "write_report"
+
+
+class ToolStatus(StrEnum):
+    """JSD-DOM-002 ToolStatus."""
+
+    running = "running"
+    ok = "ok"
+    failed = "failed"
+
+
+class InputKind(StrEnum):
+    """JSD-DOM-002 InputKind."""
+
+    answer = "answer"
+    ask = "ask"
+
+
+class Phase(StrEnum):
+    """JSD-DOM-002 Phase."""
+
+    review = "review"
+    follow_up = "follow_up"
+
+
+# --- DTOs ---
+
+
+@dataclass(frozen=True)
+class SeniorClaim:
+    """JSD-DOM-002 SeniorClaim DTO."""
+
+    kind: SeniorKind
+    amount_manwon: int
+    entry_id: str
+    holder: str | None = None
+
+
+@dataclass(frozen=True)
+class OtherTenants:
+    """JSD-DOM-002 OtherTenants DTO."""
+
+    households: int | None = None
+    known_deposit_manwon: int | None = None
+    vacant_rooms: int | None = None
+    added_manwon: int = 0
+
+
+@dataclass(frozen=True)
+class PriceEstimate:
+    """JSD-DOM-002 PriceEstimate DTO."""
+
+    amount_manwon: int
+    source: PriceSource
+    period: str | None = None
+    count: int | None = None
+
+
+@dataclass(frozen=True)
+class RightsSummary:
+    """JSD-DOM-002 RightsSummary DTO."""
+
+    senior_mortgage_manwon: int
+    senior_lease_manwon: int
+    other_tenants_manwon: int
+    senior_total_manwon: int
+    deposit_manwon: int
+    price_manwon: int | None
+    price_source: PriceSource | None
+    debt_ratio: float | None
+    senior_ratio: float | None
+    multi_household_unknown: bool
+    based_on: list[str]
+
+
+@dataclass(frozen=True)
+class RiskSignal:
+    """JSD-DOM-002 RiskSignal DTO."""
+
+    code: str
+    severity: Severity
+    label: str
+    source: str
+    entry_ids: list[str]
+    source_date: date
+
+
+@dataclass(frozen=True)
+class UnknownItem:
+    """JSD-DOM-002 UnknownItem DTO."""
+
+    code: str
+    reason: UnknownReason
+    how_to_check: str
+
+
+@dataclass(frozen=True)
+class ChecklistItem:
+    """JSD-DOM-002 ChecklistItem DTO."""
+
+    code: str
+    label: str
+    result: CheckResult
+    entry_ids: list[str]
+
+
+@dataclass(frozen=True)
+class Grade:
+    """JSD-DOM-002 Grade DTO."""
+
+    level: GradeLevel
+    deciders: list[str]
+    unknowns: list[str]
+    rule_version: str
+
+
+@dataclass(frozen=True)
+class SignalCheck:
+    """JSD-DOM-002 SignalCheck DTO."""
+
+    grade: Grade
+    signals: list[RiskSignal]
+    checked: list[ChecklistItem]
+    unknowns: list[UnknownItem]
+
+
+@dataclass(frozen=True)
+class EntryFact:
+    """JSD-DOM-002 EntryFact DTO."""
+
+    entry_id: str
+    section: Section
+    rank_no: str
+    parent_entry_id: str | None = None
+    purpose_code: PurposeCode = PurposeCode.other
+    cause: str | None = None
+    received_at: date | None = None
+    amount_manwon: int | None = None
+    price_manwon: int | None = None
+    holder: str | None = None
+    holder_is_corporation: bool | None = None
+    cancelled: bool = False
+
+
+@dataclass(frozen=True)
+class PropertyFact:
+    """JSD-DOM-002 PropertyFact DTO."""
+
+    region: str
+    building_type: BuildingType
+    is_collective: bool
+    land_right_unregistered: bool
+    separate_land_registry: bool
+
+
+@dataclass(frozen=True)
+class RightsInput:
+    """JSD-DOM-002 RightsInput DTO."""
+
+    entries: list[EntryFact]
+    deposit_manwon: int
+    building_type: BuildingType
+    region: str
+    override_price_manwon: int | None = None
+    trade_price_manwon: int | None = None
+    user_price_manwon: int | None = None
+    other_tenants_manwon: int | None = None
+    vacant_rooms: int | None = None
+    amount_overrides: dict[str, int] = field(default_factory=dict)
+    today: date = field(default_factory=date.today)
+
+
+@dataclass(frozen=True)
+class SignalInput:
+    """JSD-DOM-002 SignalInput DTO."""
+
+    entries: list[EntryFact]
+    property: PropertyFact
+    rights: RightsSummary
+    owner_matches_counterparty: bool | None = None
+    proxy_status: ProxyStatus = ProxyStatus.unknown
+    illegal_building: IllegalBuilding = IllegalBuilding.unknown
+    owner_type: OwnerType = OwnerType.unknown
+    ledger_main_use: str | None = None
+    defaulter_matched: bool | None = None
+    tenants_answered: bool = False
+    failures: list[str] = field(default_factory=list)
+    untried: list[str] = field(default_factory=list)
+    today: date = field(default_factory=date.today)
+
+
+@dataclass(frozen=True)
+class Criteria:
+    """JSD-DOM-002 Criteria DTO."""
+
+    rule_version: str
+    grades: dict[str, str] | None = None
+    signals: list[dict] | None = None
+    debt_ratio: dict | None = None
+    required_checks: dict | None = None
+    price_order: list[str] | None = None
+    priority_repayment: dict | None = None
+    checklist: dict | None = None
+    limits: dict | None = None
+    sources: list[dict] | None = None
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """JSD-DOM-002 ToolCall DTO."""
+
+    id: str
+    name: str
+    arguments: dict
+
+
+@dataclass(frozen=True)
+class ModelTurn:
+    """JSD-DOM-002 ModelTurn DTO."""
+
+    text: str | None
+    tool_calls: list[ToolCall]
+    refused: bool
+    tokens_in: int
+    tokens_out: int
+
+
+@dataclass(frozen=True)
+class PriceLookup:
+    """JSD-DOM-002 PriceLookup DTO."""
+
+    price_manwon: int
+    count: int
+    period: str
+    source: PriceSource
+    samples: list[dict] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class BuildingLedger:
+    """JSD-DOM-002 BuildingLedger DTO."""
+
+    main_use: str
+    ledger_kind: LedgerKind
+    households: int | None = None
+    families: int | None = None
+    approved_at: date | None = None
+    multiple_candidates: bool = False
+
+
+@dataclass(frozen=True)
+class DefaulterMatch:
+    """JSD-DOM-002 DefaulterMatch DTO."""
+
+    matched: bool
+    match_count: int
+    snapshot_date: date
+    note: str = ""
+
+
+@dataclass(frozen=True)
+class SentenceRequest:
+    """JSD-DOM-002 SentenceRequest DTO."""
+
+    grade: Grade
+    rights: RightsSummary
+    signals: list[RiskSignal]
+    agent_notes: str | None = None
+    revision_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class Sentences:
+    """JSD-DOM-002 Sentences DTO."""
+
+    conclusion: str
+    explanations: dict[str, str]
+    questions: list[str]
+    tokens_in: int
+    tokens_out: int
+
+
+@dataclass(frozen=True)
+class ReportResult:
+    """JSD-DOM-002 ReportResult DTO."""
+
+    grade: GradeLevel
+    signal_count: int
+    unknown_count: int
+    corrections: int
+    rule_version: str
+    revision_no: int
+    revision_reason: str | None = None
+    llm_fallback: bool = False
+    tokens_in: int = 0
+    tokens_out: int = 0
+
+
+@dataclass(frozen=True)
+class AskArgs:
+    """JSD-DOM-002 AskArgs DTO."""
+
+    kind: QuestionKind
+    text: str
+    why: str
+    input_type: InputType
+    options: list[str] | None = None
+    help_url: str | None = None
+
+
+@dataclass(frozen=True)
+class AskAnswer:
+    """JSD-DOM-002 AskAnswer DTO."""
+
+    question_id: str
+    answer: str
+    document_id: str | None = None
+
+
+@dataclass(frozen=True)
+class CitedText:
+    """JSD-DOM-002 CitedText DTO."""
+
+    text: str
+    citations: list[dict]
+    dropped: int
+
+
+@dataclass(frozen=True)
+class CitationRef:
+    """JSD-DOM-002 CitationRef DTO."""
+
+    used_in: CitationUse
+    ref: str
+    citation_id: str
+
+
+@dataclass(frozen=True)
+class BlockExcerpt:
+    """JSD-DOM-002 BlockExcerpt DTO."""
+
+    entry_id: str
+    document_id: str
+    excerpt: str
+
