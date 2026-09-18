@@ -50,8 +50,14 @@ async def health_check():
     return {"status": health.status, "db": health.db, "version": health.version}
 
 
-# 도메인 라우터 등록 자리 (슬라이스 B1, B2, B3, B4에서 추가 예정)
-# ...
+# 도메인 라우터 등록
+from app.domains.registry.router import router as registry_router
+from app.domains.review.router import router as review_router
+from app.domains.sample.router import router as sample_router
+
+app.include_router(review_router)
+app.include_router(registry_router)
+app.include_router(sample_router)
 
 
 # 정적 파일 서빙 및 SPA 폴백 (프런트엔드 빌드 산출물 서빙)
