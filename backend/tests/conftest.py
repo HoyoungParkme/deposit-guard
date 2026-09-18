@@ -19,7 +19,18 @@ import app.domains.gate.models  # noqa: F401
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """테스트용 비동기 DB 세션 fixture."""
     async with async_session_factory() as session:
+        # 테스트 시작 전 기존 데이터 정리
+        await session.execute(
+            text(
+                "TRUNCATE ip_quotas, file_caches, review_records, questions, "
+                "follow_up_turns, usage_logs, registry_entries, registry_extracts, "
+                "reviews CASCADE"
+            )
+        )
+        await session.commit()
+
         yield session
+
         # 테스트 종료 후 생성된 데이터 정리
         await session.execute(
             text(

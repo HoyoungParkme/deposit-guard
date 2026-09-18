@@ -24,3 +24,65 @@ body {
   font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* 등기부 원문 표 스타일 (JSD-UI-001 4.1) */
+.doc-sheet {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.doc-sheet h1, .doc-sheet h2, .doc-sheet h3 {
+  font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  background-color: #f3f4f6;
+  border-left: 3px solid var(--primary);
+  color: #1f2937;
+  border-radius: 2px;
+}
+
+.doc-sheet p {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  color: #374151;
+  background-color: #fafafa;
+  border-radius: 4px;
+}
+
+.doc-sheet table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  border: 1px solid #d1d5db;
+  font-size: 11px;
+}
+
+.doc-sheet th {
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 5px 6px;
+  font-weight: 600;
+  text-align: center;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.doc-sheet td {
+  border: 1px solid #e5e7eb;
+  padding: 5px 6px;
+  vertical-align: top;
+  color: #1f2937;
+}
+
+.doc-sheet [data-block-id].is-highlighted {
+  background-color: var(--highlight) !important;
+  outline: 2px solid #d97706;
+  box-shadow: 0 0 8px rgba(217, 119, 6, 0.4);
+  position: relative;
+  z-index: 10;
+}
+
