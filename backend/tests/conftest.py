@@ -9,6 +9,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_factory
+# Ensure all models are loaded so Base.metadata resolves foreign keys
+import app.domains.review.models  # noqa: F401
+import app.domains.registry.models  # noqa: F401
+import app.domains.gate.models  # noqa: F401
 
 
 @pytest_asyncio.fixture
