@@ -7,6 +7,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import StrEnum
+from typing import Any
 
 
 
@@ -642,11 +643,22 @@ class AskAnswer:
 
 
 @dataclass(frozen=True)
+class Citation:
+    """JSD-DOM-002 Citation DTO."""
+
+    key: str
+    label: str
+    document_id: str
+    block_ids: list[str]
+    entry_ids: list[str]
+
+
+@dataclass(frozen=True)
 class CitedText:
     """JSD-DOM-002 CitedText DTO."""
 
     text: str
-    citations: list[dict]
+    citations: list[Citation]
     dropped: int
 
 
@@ -656,7 +668,7 @@ class CitationRef:
 
     used_in: CitationUse
     ref: str
-    citation_id: str
+    citation: Citation
 
 
 @dataclass(frozen=True)
@@ -666,4 +678,154 @@ class BlockExcerpt:
     entry_id: str
     document_id: str
     excerpt: str
+
+
+@dataclass(frozen=True)
+class BlockUsageItem:
+    """JSD-DOM-002 BlockUsageItem DTO."""
+
+    kind: str
+    label: str
+    signal_code: str | None = None
+    message_id: str | None = None
+
+
+@dataclass(frozen=True)
+class BlockUsages:
+    """JSD-DOM-002 BlockUsages DTO."""
+
+    block_id: str
+    excerpt: str
+    used_in: list[BlockUsageItem]
+
+
+@dataclass(frozen=True)
+class Todo:
+    """JSD-DOM-002 Todo DTO."""
+
+    stage: TodoStage
+    title: str
+    how: str
+    cost: str
+    because: list[str]
+
+
+@dataclass(frozen=True)
+class SpecialClause:
+    """JSD-DOM-002 SpecialClause DTO."""
+
+    title: str
+    body: str
+    source: str
+    filled: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ReportConclusion:
+    """JSD-DOM-002 ReportConclusion DTO."""
+
+    text: str
+    citations: list[Citation] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ReportSignalItem:
+    """JSD-DOM-002 ReportSignalItem DTO."""
+
+    code: str
+    severity: Severity
+    label: str
+    explanation: str
+    source: str
+    source_date: date
+    citations: list[Citation] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ReportCheckedItem:
+    """JSD-DOM-002 ReportCheckedItem DTO."""
+
+    code: str
+    label: str
+    result: CheckResult
+    citations: list[Citation] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class Report:
+    """JSD-DOM-002 Report DTO."""
+
+    grade: Grade
+    conclusion: ReportConclusion
+    rights: RightsSummary
+    signals: list[ReportSignalItem]
+    checked: list[ReportCheckedItem]
+    todos: list[Todo]
+    clauses: list[SpecialClause]
+    questions_to_ask: list[str]
+    notices: list[str]
+    corrections: int
+    llm_fallback: bool
+    revision_no: int
+    revision_reason: str | None = None
+
+
+@dataclass(frozen=True)
+class Property:
+    """JSD-DOM-002 Property DTO."""
+
+    region: str
+    building_type: BuildingType
+    is_collective: bool
+    land_right_unregistered: bool = False
+    separate_land_registry: bool = False
+    lot_address: str | None = None
+    exclusive_area_m2: float | None = None
+    building_name: str | None = None
+
+
+@dataclass(frozen=True)
+class RegistryEntry:
+    """JSD-DOM-002 RegistryEntry DTO."""
+
+    entry_id: str
+    rank_no: str
+    purpose_code: PurposeCode
+    received_at: date | None = None
+    amount_manwon: int | None = None
+    price_manwon: int | None = None
+    holder: str | None = None
+    holder_is_corporation: bool | None = None
+    cancelled: bool = False
+    document_id: str = ""
+    block_ids: list[str] = field(default_factory=list)
+    location_label: str = ""
+    section: Section = Section.gap
+    parent_entry_id: str | None = None
+    cause: str | None = None
+    cancelled_by_entry_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ReportInput:
+    """JSD-DOM-002 ReportInput DTO."""
+
+    rights: RightsSummary
+    check: SignalCheck
+    property: Property
+    deposit_manwon: int
+    contract_type: ContractType
+    answers: dict[QuestionKind, str]
+    entries: list[RegistryEntry]
+    use_model: bool = True
+
+
+@dataclass(frozen=True)
+class Shareable:
+    """JSD-DOM-002 Shareable DTO."""
+
+    report: Report
+    subject: dict[str, Any]
+
+
 
