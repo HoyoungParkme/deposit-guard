@@ -1,0 +1,35 @@
+[
+  {
+    "sample_id": "apartment_safe",
+    "title": "아파트",
+    "summary": "근저당 하나 있는 보통의 집",
+    "region": "서울 노원구",
+    "deposit_manwon": 20000,
+    "contract_type": "jeonse",
+    "file_name": "apartment_safe.pdf",
+    "land_file_name": null,
+    "expected_grade": "safe"
+  },
+  {
+    "sample_id": "multi_family_caution",
+    "title": "신축 빌라",
+    "summary": "시세가 없고 근저당이 큰 다세대",
+    "region": "서울 강서구",
+    "deposit_manwon": 18000,
+    "contract_type": "jeonse",
+    "file_name": "multi_family_caution.pdf",
+    "land_file_name": null,
+    "expected_grade": "caution"
+  },
+  {
+    "sample_id": "multi_household_danger",
+    "title": "다가구",
+    "summary": "세입자가 여럿이고 임차권등기가 있는 집",
+    "region": "경기 부천",
+    "deposit_manwon": 9000,
+    "contract_type": "jeonse",
+    "file_name": "multi_household_danger.pdf",
+    "land_file_name": "multi_household_danger_land.pdf",
+    "expected_grade": "danger"
+  }
+]
