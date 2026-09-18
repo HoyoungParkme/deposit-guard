@@ -24,7 +24,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             text(
                 "TRUNCATE ip_quotas, file_caches, review_records, questions, "
                 "follow_up_turns, usage_logs, registry_entries, registry_extracts, "
-                "reviews CASCADE"
+                "reviews, lookup_caches, region_codes, defaulter_records CASCADE"
             )
         )
         await session.commit()
@@ -36,7 +36,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             text(
                 "TRUNCATE ip_quotas, file_caches, review_records, questions, "
                 "follow_up_turns, usage_logs, registry_entries, registry_extracts, "
-                "reviews CASCADE"
+                "reviews, lookup_caches, region_codes, defaulter_records CASCADE"
             )
         )
         await session.commit()
