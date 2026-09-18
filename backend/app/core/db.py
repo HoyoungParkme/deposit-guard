@@ -14,12 +14,15 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
 
+from sqlalchemy.pool import NullPool
+
 # 비동기 엔진 생성: 바인드 값을 예외 문자열에 남기지 않도록 hide_parameters=True 설정
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
     hide_parameters=True,
     future=True,
+    poolclass=NullPool,
 )
 
 # 비동기 세션 팩토리

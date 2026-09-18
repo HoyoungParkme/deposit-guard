@@ -44,6 +44,18 @@ class Settings(BaseSettings):
     # Spool max size for multipart parser (bytes) — 15MB (> LIMITS.file_mb 10MB)
     SPOOL_MAX_SIZE: int = 15 * 1024 * 1024
 
+    @property
+    def app_secret(self) -> str:
+        return self.APP_SECRET
+
+    @property
+    def upstage_api_key(self) -> str:
+        return self.UPSTAGE_API_KEY
+
+    @property
+    def openai_api_key(self) -> str:
+        return self.OPENAI_API_KEY
+
 
 settings = Settings()
 
