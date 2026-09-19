@@ -60,6 +60,14 @@ export const TopBar: React.FC<TopBarProps> = ({ subject, counters }) => {
           )}
 
           <Link
+            to="/guide"
+            className="text-gray-600 hover:text-gray-900 font-medium px-2 py-1 rounded hover:bg-gray-100 transition flex items-center gap-1"
+          >
+            <span>📖</span>
+            <span>이용 가이드</span>
+          </Link>
+
+          <Link
             to="/criteria"
             className="text-gray-600 hover:text-gray-900 font-medium px-2 py-1 rounded hover:bg-gray-100 transition"
           >

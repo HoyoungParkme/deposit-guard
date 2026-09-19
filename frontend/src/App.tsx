@@ -4,6 +4,7 @@ import { StartPage } from './pages/StartPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { ReportPage } from './pages/ReportPage';
 import { CriteriaPage } from './pages/CriteriaPage';
+import { GuidePage } from './pages/GuidePage';
 import { SharedPage } from './pages/SharedPage';
 
 export const App: React.FC = () => {
@@ -13,6 +14,7 @@ export const App: React.FC = () => {
         <main className="flex-1 flex flex-col">
           <Routes>
             <Route path="/" element={<StartPage />} />
+            <Route path="/guide" element={<GuidePage />} />
             <Route path="/review/:id" element={<ReviewPage />} />
             <Route path="/review/:id/report" element={<ReportPage />} />
             <Route path="/criteria" element={<CriteriaPage />} />

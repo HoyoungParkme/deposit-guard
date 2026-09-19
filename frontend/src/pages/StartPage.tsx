@@ -54,12 +54,21 @@ export const StartPage: React.FC = () => {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-10 flex flex-col">
         {/* 키커, 타이틀, 설명 */}
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold mb-3"
-            data-el="2b"
-          >
-            <span>🛡️</span>
-            <span>LH 전세임대 권리분석 기준 그대로</span>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+            <div
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold"
+              data-el="2b"
+            >
+              <span>🛡️</span>
+              <span>LH 전세임대 권리분석 기준 그대로</span>
+            </div>
+            <Link
+              to="/guide"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold border border-indigo-200/80 transition shadow-2xs"
+            >
+              <span>📸</span>
+              <span>1분 시각 이용 가이드 보기 →</span>
+            </Link>
           </div>
           <h1
             className="text-3xl sm:text-4xl font-extrabold text-gray-950 tracking-tight mb-3"
@@ -185,15 +194,23 @@ export const StartPage: React.FC = () => {
 
           <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-blue-950">
             <div className="flex items-center gap-2.5">
-              <span className="text-lg">⚖️</span>
-              <span>LH 전세임대 심사 기준과 11가지 위험 신호 판정 기준이 궁금하신가요?</span>
+              <span className="text-lg">📖</span>
+              <span>서비스가 어떻게 작동하고 분석하는지 실제 화면으로 확인해보세요.</span>
             </div>
-            <Link
-              to="/criteria"
-              className="font-bold text-blue-600 hover:text-blue-700 bg-white border border-blue-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition flex-shrink-0"
-            >
-              전체 판정 기준표 보기 →
-            </Link>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                to="/guide"
+                className="font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition"
+              >
+                📸 화면별 가이드 보기 →
+              </Link>
+              <Link
+                to="/criteria"
+                className="font-bold text-blue-600 hover:text-blue-700 bg-white border border-blue-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition"
+              >
+                ⚖️ 판정 기준표 →
+              </Link>
+            </div>
           </div>
         </div>
 
