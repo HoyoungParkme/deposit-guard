@@ -47,23 +47,38 @@ class TrackingFixtureParser:
         return ParsedDocument(html=html, page_count=1, billed_pages=1)
 
 
+class FakeAgentModel:
+    """E2E 테스트용 가짜 에이전트 모델."""
+
+    async def complete(self, history: list[dict], tools: list[dict]):
+        from app.shared.types import ModelTurn
+        return ModelTurn(
+            text="진단이 완료되었습니다.",
+            tool_calls=[],
+            refused=False,
+            tokens_in=10,
+            tokens_out=10,
+        )
+
+
 @pytest.fixture
 def tracking_parser() -> TrackingFixtureParser:
     return TrackingFixtureParser()
 
 
 from app.domains.registry.router import get_registry_service
-from app.domains.review.router import get_review_service
+from app.domains.review.router import get_agent_model, get_review_service
 
 
 @pytest.fixture(autouse=True)
 def override_parser_dependency(tracking_parser: TrackingFixtureParser):
-    """테스트 시 ReviewService와 RegistryService에 tracking_parser를 주입."""
+    """테스트 시 ReviewService, RegistryService, AgentModel을 모의 객체로 주입."""
     mock_reg_service = RegistryService(parser=tracking_parser)
     mock_review_service = ReviewService(registry_service=mock_reg_service)
 
     app.dependency_overrides[get_registry_service] = lambda: mock_reg_service
     app.dependency_overrides[get_review_service] = lambda: mock_review_service
+    app.dependency_overrides[get_agent_model] = lambda: FakeAgentModel()
     yield
     app.dependency_overrides.clear()
 

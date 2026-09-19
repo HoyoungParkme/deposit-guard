@@ -193,12 +193,14 @@ class RegistryService:
         r_id = _to_uuid(review_id)
 
         async def _execute(sess: AsyncSession) -> Registry:
+            ex = None
             if document_id:
-                d_id = _to_uuid(document_id)
-                ex = await crud.get_extract_by_id(sess, r_id, d_id)
-                if ex is None:
-                    raise AppError("not_found")
-            else:
+                try:
+                    d_id = _to_uuid(document_id)
+                    ex = await crud.get_extract_by_id(sess, r_id, d_id)
+                except Exception:
+                    ex = None
+            if ex is None:
                 ex = await crud.get_unread_or_latest_extract(sess, r_id)
                 if ex is None:
                     raise AppError("not_found")

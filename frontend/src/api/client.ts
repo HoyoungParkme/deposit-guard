@@ -1,6 +1,6 @@
 /**
  * API 클라이언트.
- * 근거: JSD-DOM-002 1장, JSD-API-001
+ * 근거: JSD-DOM-002 1장, JSD-API-001, JSD-UI-001
  */
 
 export interface SampleCase {
@@ -34,14 +34,104 @@ export interface ReviewDocumentItem {
   page_count?: number;
 }
 
+export interface QuestionData {
+  question_id: string;
+  kind: string;
+  text: string;
+  why?: string;
+  input_type: 'choice' | 'text' | 'money' | 'file';
+  options?: string[];
+  help_url?: string;
+  asked_no?: number;
+}
+
 export interface ReviewView {
   review_id: string;
   status: 'created' | 'running' | 'waiting_user' | 'done' | 'failed' | 'expired';
   subject: ReviewSubject;
   counters: ReviewCounters;
-  pending_question: any | null;
+  pending_question: QuestionData | null;
   documents: ReviewDocumentItem[];
   has_report: boolean;
+  expires_at: string;
+}
+
+export interface MessageItem {
+  id?: string;
+  message_id?: string;
+  seq: number;
+  role: 'agent' | 'user' | 'system';
+  kind: string;
+  text?: string;
+  content?: string;
+  data?: any;
+  created_at?: string;
+  tool_name?: string;
+  tool_summary?: string;
+  question_id?: string;
+  question?: QuestionData;
+  citations?: Array<{ block_id: string; label: string; excerpt?: string }>;
+}
+
+export interface RiskSignalItem {
+  code: string;
+  severity: 'danger' | 'caution';
+  label: string;
+  description?: string;
+  source?: string;
+  source_date?: string;
+}
+
+export interface ClauseItem {
+  code?: string;
+  title: string;
+  body?: string;
+  text?: string;
+  source?: string;
+  reason?: string;
+  filled?: boolean;
+}
+
+export interface TodoItem {
+  phase: 'before_contract' | 'closing' | 'move_in' | string;
+  title: string;
+  text: string;
+}
+
+export interface ReportData {
+  review_id: string;
+  grade: 'safe' | 'caution' | 'danger';
+  grade_label?: string;
+  summary: string;
+  reasons: string[];
+  debt_ratio?: number;
+  price_manwon?: number;
+  senior_debt_manwon?: number;
+  deposit_manwon?: number;
+  priority_repayment_manwon?: number;
+  signals?: RiskSignalItem[];
+  clauses?: ClauseItem[];
+  todos?: TodoItem[];
+  entries?: Array<{
+    entry_id: string;
+    section: string;
+    rank_no: string;
+    purpose: string;
+    amount_manwon?: number;
+    holder?: string;
+  }>;
+  created_at: string;
+}
+
+export interface SharedView {
+  report: ReportData;
+  subject: {
+    region_short?: string;
+    building_type?: string;
+    deposit_manwon?: number;
+    contract_type?: string;
+    reviewed_at?: string;
+  };
   expires_at: string;
 }
 
@@ -135,4 +225,76 @@ export async function getDocumentHtml(reviewId: string, documentId: string): Pro
     await handleResponse(res);
   }
   return res.text();
+}
+
+export async function listMessages(reviewId: string, afterSeq: number = 0): Promise<{ messages: MessageItem[]; next_seq: number; status: string }> {
+  const res = await fetch(`/api/reviews/${reviewId}/messages?after_seq=${afterSeq}`);
+  return handleResponse<{ messages: MessageItem[]; next_seq: number; status: string }>(res);
+}
+
+export async function postMessage(
+  reviewId: string,
+  payload: {
+    kind: 'answer' | 'ask';
+    question_id?: string;
+    text?: string;
+    choice?: string;
+  },
+): Promise<{ message_id: string; seq: number }> {
+  const res = await fetch(`/api/reviews/${reviewId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<{ message_id: string; seq: number }>(res);
+}
+
+export async function getReport(reviewId: string): Promise<ReportData> {
+  const res = await fetch(`/api/reviews/${reviewId}/report`);
+  return handleResponse<ReportData>(res);
+}
+
+export async function overrideValues(
+  reviewId: string,
+  payload: {
+    price_manwon?: number | null;
+    entries?: Array<{ entry_id: string; amount_manwon: number }>;
+  },
+): Promise<ReportData> {
+  const res = await fetch(`/api/reviews/${reviewId}/values`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<ReportData>(res);
+}
+
+export async function createShareLink(reviewId: string): Promise<{ token: string; url: string; expires_at: string }> {
+  const res = await fetch(`/api/reviews/${reviewId}/shares`, {
+    method: 'POST',
+  });
+  return handleResponse<{ token: string; url: string; expires_at: string }>(res);
+}
+
+export async function getSharedView(token: string): Promise<SharedView> {
+  const res = await fetch(`/api/shares/${token}`);
+  return handleResponse<SharedView>(res);
+}
+
+export async function getCriteria(topic?: string, signalCode?: string): Promise<any> {
+  const params = new URLSearchParams();
+  if (topic) params.append('topic', topic);
+  if (signalCode) params.append('signal_code', signalCode);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  const res = await fetch(`/api/criteria${query}`);
+  return handleResponse<any>(res);
+}
+
+export async function getBlockUsages(reviewId: string, blockId: string): Promise<{ block_id: string; excerpt: string; used_in: any[] }> {
+  const res = await fetch(`/api/reviews/${reviewId}/blocks/${blockId}`);
+  return handleResponse<{ block_id: string; excerpt: string; used_in: any[] }>(res);
 }

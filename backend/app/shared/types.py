@@ -828,4 +828,19 @@ class Shareable:
     subject: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ShareLink:
+    """JSD-DOM-002 ShareLink DTO."""
 
+    token: str
+    url: str
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class SharedView:
+    """JSD-DOM-002 SharedView DTO."""
+
+    report: Report
+    subject: dict[str, Any]
+    expires_at: datetime

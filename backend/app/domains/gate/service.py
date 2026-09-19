@@ -175,3 +175,30 @@ async def remember_html(
                     is_sample=is_sample,
                     now=now,
                 )
+
+
+async def forget(
+    file_sha256: str,
+    session: AsyncSession | None = None,
+) -> None:
+    """검토 삭제 때 캐시 지우기 (JSD-MS-011#gate.forget)."""
+    if session is not None:
+        await crud.delete_file_cache(session, file_sha256)
+    else:
+        async with async_session_factory() as sess:
+            async with sess.begin():
+                await crud.delete_file_cache(sess, file_sha256)
+
+
+async def purge(
+    now: datetime,
+    session: AsyncSession | None = None,
+) -> int:
+    """만료 캐시·지난 한도 행 지우기 (JSD-MS-011#gate.purge)."""
+    if session is not None:
+        return await crud.purge_expired_gate_records(session, now)
+    else:
+        async with async_session_factory() as sess:
+            async with sess.begin():
+                return await crud.purge_expired_gate_records(sess, now)
+

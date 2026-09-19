@@ -19,10 +19,19 @@ from app.core.logging import setup_logging
 MultiPartParser.spool_max_size = settings.SPOOL_MAX_SIZE
 
 
+from app.domains.review.service import ReviewService
+from app.domains.lookup.seed import ensure_lookup_seed_data
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """애플리케이션 수명 주기 관리."""
     setup_logging()
+    try:
+        await ensure_lookup_seed_data()
+        await ReviewService().warm_samples()
+    except Exception:
+        pass
     yield
 
 
@@ -53,11 +62,15 @@ async def health_check():
 # 도메인 라우터 등록
 from app.domains.registry.router import router as registry_router
 from app.domains.review.router import router as review_router
+from app.domains.rules.router import router as rules_router
 from app.domains.sample.router import router as sample_router
+from app.domains.share.router import router as share_router
 
 app.include_router(review_router)
 app.include_router(registry_router)
 app.include_router(sample_router)
+app.include_router(share_router)
+app.include_router(rules_router)
 
 
 # 정적 파일 서빙 및 SPA 폴백 (프런트엔드 빌드 산출물 서빙)

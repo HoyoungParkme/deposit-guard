@@ -90,3 +90,12 @@ class SampleService:
             media_type="application/pdf",
             filename=target.file_name,
         )
+
+    @classmethod
+    def fixture_html(cls, sample_id: str) -> str | None:
+        """예시 HTML 사전 파싱 결과물 조회 (캐시 웜업 및 폴백용)."""
+        samples_dir = _get_samples_dir()
+        html_path = samples_dir / f"{sample_id}.html"
+        if html_path.exists():
+            return html_path.read_text(encoding="utf-8")
+        return None

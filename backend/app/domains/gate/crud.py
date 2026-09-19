@@ -4,7 +4,7 @@
 """
 
 from datetime import date, datetime, timedelta, timezone
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -96,3 +96,41 @@ async def upsert_file_cache(
         },
     )
     await session.execute(stmt)
+
+
+async def delete_file_cache(
+    session: AsyncSession,
+    file_sha256: str,
+) -> int:
+    """일반 파일 파싱 캐시를 삭제한다 (예시 파일은 유지)."""
+    stmt = (
+        delete(FileCache)
+        .where(
+            FileCache.file_sha256 == file_sha256,
+            FileCache.is_sample.is_(False),
+        )
+    )
+    res = await session.execute(stmt)
+    return res.rowcount
+
+
+async def purge_expired_gate_records(
+    session: AsyncSession,
+    now: datetime,
+) -> int:
+    """만료된 파일 캐시와 지난 일자의 IP 한도 행을 삭제한다."""
+    from zoneinfo import ZoneInfo
+    seoul_today = now.astimezone(ZoneInfo("Asia/Seoul")).date()
+
+    res_files = await session.execute(
+        delete(FileCache).where(
+            FileCache.expires_at.isnot(None),
+            FileCache.expires_at < now,
+        )
+    )
+    res_quotas = await session.execute(
+        delete(IpQuota).where(
+            IpQuota.day < seoul_today,
+        )
+    )
+    return res_files.rowcount + res_quotas.rowcount

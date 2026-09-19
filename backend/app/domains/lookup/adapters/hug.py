@@ -6,7 +6,7 @@
 
 import re
 import logging
-from bs4 import BeautifulSoup
+from html.parser import HTMLParser
 import httpx
 
 from app.core.config import settings
@@ -14,6 +14,34 @@ from app.core.errors import AppError
 from app.domains.lookup.schemas import DefaulterRow
 
 logger = logging.getLogger("deposit_guard.lookup.hug")
+
+
+class _TableParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.rows: list[list[str]] = []
+        self._current_row: list[str] = []
+        self._current_cell: list[str] = []
+        self._in_cell = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("td", "th"):
+            self._in_cell = True
+            self._current_cell = []
+        elif tag == "tr":
+            self._current_row = []
+
+    def handle_endtag(self, tag):
+        if tag in ("td", "th"):
+            self._in_cell = False
+            self._current_row.append("".join(self._current_cell).strip())
+        elif tag == "tr":
+            if self._current_row:
+                self.rows.append(self._current_row)
+
+    def handle_data(self, data):
+        if self._in_cell:
+            self._current_cell.append(data)
 
 
 class HugDefaulterSource:
@@ -54,15 +82,11 @@ class HugDefaulterSource:
         except UnicodeDecodeError:
             content_text = res.text
 
-        soup = BeautifulSoup(content_text, "html.parser")
-        table = soup.find("table")
-        if not table:
-            return []
+        parser = _TableParser()
+        parser.feed(content_text)
 
         rows: list[DefaulterRow] = []
-        tbody = table.find("tbody") or table
-        for tr in tbody.find_all("tr"):
-            cols = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]
+        for cols in parser.rows:
             if len(cols) < 2:
                 continue
 

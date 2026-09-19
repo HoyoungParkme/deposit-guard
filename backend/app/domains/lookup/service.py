@@ -6,17 +6,19 @@
 """
 
 from __future__ import annotations
+
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
 import hashlib
 import hmac
+import logging
 import re
 from typing import Any, Callable
-import logging
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.db import async_session_factory
 from app.core.errors import AppError
 from app.domains.lookup import crud
 from app.domains.lookup.ports import DefaulterSource, LedgerSource, TradeSource
@@ -54,7 +56,7 @@ class LookupService:
 
     def __init__(
         self,
-        session: AsyncSession,
+        session: AsyncSession | None = None,
         trade_source: TradeSource | None = None,
         ledger_source: LedgerSource | None = None,
         defaulter_source: DefaulterSource | None = None,
@@ -67,10 +69,25 @@ class LookupService:
         self._today_fn = today_fn or date.today
         self._db_lock = asyncio.Lock()
 
+    @asynccontextmanager
+    async def _session_ctx(self, session: AsyncSession | None = None):
+        if session is not None:
+            yield session
+        elif self._session is not None:
+            yield self._session
+        else:
+            async with async_session_factory() as sess:
+                async with sess.begin():
+                    yield sess
+
     def _now(self) -> datetime:
         return datetime.now(timezone.utc)
 
-    async def region_code(self, lot_address: str | None) -> str:
+    async def region_code(
+        self,
+        lot_address: str | None,
+        session: AsyncSession | None = None,
+    ) -> str:
         """지번 주소에서 법정동코드 10자리를 조회한다.
 
         항목 ID: JSD-MS-006#LookupService.region_code
@@ -86,21 +103,25 @@ class LookupService:
         else:
             addr_prefix = " ".join(words)
 
-        async with self._db_lock:
-            code = await crud.find_region_code(self._session, addr_prefix)
+        async with self._session_ctx(session) as sess:
+            async with self._db_lock:
+                code = await crud.find_region_code(sess, addr_prefix)
         if not code:
-            raise AppError("no_region_code", f"해당 주소에 일치하는 법정동코드가 없습니다.")
+            raise AppError("no_region_code", "해당 주소에 일치하는 법정동코드가 없습니다.")
         return code
 
     async def price(
-        self, target: Property, area_m2: float | None = None
+        self,
+        target: Property,
+        area_m2: float | None = None,
+        session: AsyncSession | None = None,
     ) -> PriceLookup:
         """최근 12개월 같은 단지·유사 면적(±3%) 매매 평균가를 조회한다.
 
         항목 ID: JSD-MS-006#LookupService.price
         근거: JSD-SEQ-001#SEQ-6, JSD-UC-001#UC-S4, JSD-API-002#lookup_price
         """
-        code = await self.region_code(target.lot_address)
+        code = await self.region_code(target.lot_address, session=session)
         lawd = code[:5]
 
         # API 매매 종류 매핑
@@ -130,43 +151,43 @@ class LookupService:
         async def fetch_month(ym: str) -> list[Trade] | None:
             async with semaphore:
                 key = _hmac_hex(f"trade|{api_kind}|{lawd}|{ym}")
-                async with self._db_lock:
-                    cached = await crud.get_cached_payload(self._session, key, now)
-                if cached is not None:
-                    # 캐시 복원
-                    return [
-                        Trade(
-                            date=date.fromisoformat(t["date"]),
-                            amount_manwon=t["amount_manwon"],
-                            area_m2=t["area_m2"],
-                            building_name=t["building_name"],
-                        )
-                        for t in cached
-                    ]
-
-                if self._trade_source is None:
-                    return None
-
-                try:
-                    trades = await self._trade_source.fetch(api_kind, lawd, ym)
-                    payload = [
-                        {
-                            "date": t.date.isoformat(),
-                            "amount_manwon": t.amount_manwon,
-                            "area_m2": t.area_m2,
-                            "building_name": t.building_name,
-                        }
-                        for t in trades
-                    ]
-                    expires = now + timedelta(hours=24)
+                async with self._session_ctx(session) as sess:
                     async with self._db_lock:
-                        await crud.save_cache_payload(
-                            self._session, "trade", key, payload, expires
-                        )
-                    return trades
-                except Exception as e:
-                    logger.warning(f"Trade fetch failed for {ym}: {e}")
-                    return None
+                        cached = await crud.get_cached_payload(sess, key, now)
+                    if cached is not None:
+                        return [
+                            Trade(
+                                date=date.fromisoformat(t["date"]),
+                                amount_manwon=t["amount_manwon"],
+                                area_m2=t["area_m2"],
+                                building_name=t["building_name"],
+                            )
+                            for t in cached
+                        ]
+
+                    if self._trade_source is None:
+                        return None
+
+                    try:
+                        trades = await self._trade_source.fetch(api_kind, lawd, ym)
+                        payload = [
+                            {
+                                "date": t.date.isoformat(),
+                                "amount_manwon": t.amount_manwon,
+                                "area_m2": t.area_m2,
+                                "building_name": t.building_name,
+                            }
+                            for t in trades
+                        ]
+                        expires = now + timedelta(hours=24)
+                        async with self._db_lock:
+                            await crud.save_cache_payload(
+                                sess, "trade", key, payload, expires
+                            )
+                        return trades
+                    except Exception as e:
+                        logger.warning(f"Trade fetch failed for {ym}: {e}")
+                        return None
 
         results = await asyncio.gather(*(fetch_month(ym) for ym in months))
         all_trades: list[Trade] = []
@@ -184,14 +205,12 @@ class LookupService:
         target_area = area_m2 if area_m2 is not None else target.exclusive_area_m2
         filtered: list[Trade] = []
         for t in all_trades:
-            # sh(단독다가구)가 아닌 경우 건물명 대조
             if api_kind != "sh" and target.building_name:
                 if _normalize_name(t.building_name) != _normalize_name(
                     target.building_name
                 ):
                     continue
 
-            # 면적 ±3%
             if target_area is not None and target_area > 0:
                 if abs(t.area_m2 - target_area) > (target_area * 0.03):
                     continue
@@ -224,13 +243,17 @@ class LookupService:
             samples=samples,
         )
 
-    async def building(self, target: Property) -> BuildingLedger:
+    async def building(
+        self,
+        target: Property,
+        session: AsyncSession | None = None,
+    ) -> BuildingLedger:
         """건축물대장 표제부를 조회한다.
 
         항목 ID: JSD-MS-006#LookupService.building
         근거: JSD-SEQ-001#SEQ-6, JSD-UC-001#UC-S5, JSD-API-002#lookup_building
         """
-        code = await self.region_code(target.lot_address)
+        code = await self.region_code(target.lot_address, session=session)
 
         if not target.lot_address:
             raise AppError("no_region_code", "지번 주소가 없습니다.")
@@ -251,54 +274,54 @@ class LookupService:
         key = _hmac_hex(f"building|{code}|{bun}|{ji}")
         now = self._now()
 
-        cached = await crud.get_cached_payload(self._session, key, now)
-        if cached is not None:
-            rows = [
-                LedgerRow(
-                    main_use=r["main_use"],
-                    ledger_kind=r["ledger_kind"],
-                    households=r["households"],
-                    families=r["families"],
-                    approved_at=date.fromisoformat(r["approved_at"])
-                    if r["approved_at"]
-                    else None,
-                    dong_name=r["dong_name"],
-                )
-                for r in cached
-            ]
-        else:
-            if self._ledger_source is None:
-                raise AppError("api_failed", "건축물대장 어댑터가 설정되지 않았습니다.")
-
-            try:
-                rows = await self._ledger_source.fetch(code, bun, ji)
-                payload = [
-                    {
-                        "main_use": r.main_use,
-                        "ledger_kind": r.ledger_kind.value
-                        if hasattr(r.ledger_kind, "value")
-                        else r.ledger_kind,
-                        "households": r.households,
-                        "families": r.families,
-                        "approved_at": r.approved_at.isoformat()
-                        if r.approved_at
+        async with self._session_ctx(session) as sess:
+            cached = await crud.get_cached_payload(sess, key, now)
+            if cached is not None:
+                rows = [
+                    LedgerRow(
+                        main_use=r["main_use"],
+                        ledger_kind=r["ledger_kind"],
+                        households=r["households"],
+                        families=r["families"],
+                        approved_at=date.fromisoformat(r["approved_at"])
+                        if r["approved_at"]
                         else None,
-                        "dong_name": r.dong_name,
-                    }
-                    for r in rows
+                        dong_name=r["dong_name"],
+                    )
+                    for r in cached
                 ]
-                expires = now + timedelta(hours=24)
-                await crud.save_cache_payload(
-                    self._session, "building", key, payload, expires
-                )
-            except Exception as e:
-                logger.warning(f"Ledger fetch failed: {e}")
-                raise AppError("api_failed", "건축물대장 조회 중 오류가 발생했습니다.") from e
+            else:
+                if self._ledger_source is None:
+                    raise AppError("api_failed", "건축물대장 어댑터가 설정되지 않았습니다.")
+
+                try:
+                    rows = await self._ledger_source.fetch(code, bun, ji)
+                    payload = [
+                        {
+                            "main_use": r.main_use,
+                            "ledger_kind": r.ledger_kind.value
+                            if hasattr(r.ledger_kind, "value")
+                            else r.ledger_kind,
+                            "households": r.households,
+                            "families": r.families,
+                            "approved_at": r.approved_at.isoformat()
+                            if r.approved_at
+                            else None,
+                            "dong_name": r.dong_name,
+                        }
+                        for r in rows
+                    ]
+                    expires = now + timedelta(hours=24)
+                    await crud.save_cache_payload(
+                        sess, "building", key, payload, expires
+                    )
+                except Exception as e:
+                    logger.warning(f"Ledger fetch failed: {e}")
+                    raise AppError("api_failed", "건축물대장 조회 중 오류가 발생했습니다.") from e
 
         if not rows:
             raise AppError("not_found", "건축물대장 정보가 존재하지 않습니다.")
 
-        # 고르기: 주건축물 중 동 명칭 또는 주택 용도 우선
         selected: LedgerRow | None = None
         if len(rows) == 1:
             selected = rows[0]
@@ -335,30 +358,38 @@ class LookupService:
             multiple_candidates=(len(rows) > 1),
         )
 
-    async def defaulter(self, name: str | None) -> DefaulterMatch:
+    async def defaulter(
+        self,
+        name: str | None,
+        session: AsyncSession | None = None,
+    ) -> DefaulterMatch:
         """HUG 상습 채무불이행자 공개 명단과 성명을 대조한다.
 
         항목 ID: JSD-MS-006#LookupService.defaulter
         근거: JSD-SEQ-001#SEQ-6, JSD-UC-001#UC-S6, JSD-API-002#match_defaulter
         """
-        snap = await crud.get_max_defaulter_snapshot_date(self._session)
-        if snap is None:
-            raise AppError("no_snapshot", "HUG 악성 임대인 명단 스냅샷이 적재되지 않았습니다.")
+        async with self._session_ctx(session) as sess:
+            snap = await crud.get_max_defaulter_snapshot_date(sess)
+            if snap is None:
+                raise AppError("no_snapshot", "HUG 악성 임대인 명단 스냅샷이 적재되지 않았습니다.")
 
-        if not name or not name.strip():
-            raise AppError("no_name", "대조할 임대인 성명이 제공되지 않았습니다.")
+            if not name or not name.strip():
+                raise AppError("no_name", "대조할 임대인 성명이 제공되지 않았습니다.")
 
-        normalized = _normalize_name(name)
-        count = await crud.count_matching_defaulters(self._session, normalized)
+            normalized = _normalize_name(name)
+            count = await crud.count_matching_defaulters(sess, normalized)
 
-        return DefaulterMatch(
-            matched=(count > 0),
-            match_count=count,
-            snapshot_date=snap,
-            note="동명이인일 수 있습니다. 나이·주소로 직접 확인하세요",
-        )
+            return DefaulterMatch(
+                matched=(count > 0),
+                match_count=count,
+                snapshot_date=snap,
+                note="동명이인일 수 있습니다. 나이·주소로 직접 확인하세요",
+            )
 
-    async def refresh_defaulters(self) -> int:
+    async def refresh_defaulters(
+        self,
+        session: AsyncSession | None = None,
+    ) -> int:
         """HUG 악성 임대인 공개 명단 전체를 스크래핑해 스냅샷을 교체한다.
 
         항목 ID: JSD-MS-006#LookupService.refresh_defaulters
@@ -373,22 +404,33 @@ class LookupService:
             return 0
 
         today = self._today_fn()
-        count = await crud.replace_defaulter_records(self._session, rows, today)
+        async with self._session_ctx(session) as sess:
+            count = await crud.replace_defaulter_records(sess, rows, today)
         logger.info(f"Refreshed {count} defaulter records for snapshot {today}")
         return count
 
-    async def load_region_codes(self, rows: list[RegionCodeRow]) -> int:
+    async def load_region_codes(
+        self,
+        rows: list[RegionCodeRow],
+        session: AsyncSession | None = None,
+    ) -> int:
         """법정동코드 10자리 데이터를 적재 및 갱신한다.
 
         항목 ID: JSD-MS-006#LookupService.load_region_codes
         근거: JSD-UC-001#UC-S4
         """
-        return await crud.upsert_region_code_rows(self._session, rows)
+        async with self._session_ctx(session) as sess:
+            return await crud.upsert_region_code_rows(sess, rows)
 
-    async def purge_cache(self, now: datetime) -> int:
+    async def purge_cache(
+        self,
+        now: datetime,
+        session: AsyncSession | None = None,
+    ) -> int:
         """만료된 외부 조회 캐시를 삭제한다.
 
         항목 ID: JSD-MS-006#LookupService.purge_cache
         근거: JSD-SEQ-001#SEQ-16
         """
-        return await crud.delete_expired_lookup_caches(self._session, now)
+        async with self._session_ctx(session) as sess:
+            return await crud.delete_expired_lookup_caches(sess, now)
