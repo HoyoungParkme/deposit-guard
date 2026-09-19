@@ -239,16 +239,41 @@ export async function postMessage(
     question_id?: string;
     text?: string;
     choice?: string;
+    file?: File;
   },
 ): Promise<{ message_id: string; seq: number }> {
-  const res = await fetch(`/api/reviews/${reviewId}/messages`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  let res: Response;
+  if (payload.file) {
+    const formData = new FormData();
+    formData.append('kind', payload.kind);
+    if (payload.question_id) formData.append('question_id', payload.question_id);
+    if (payload.text) formData.append('text', payload.text);
+    if (payload.choice) formData.append('choice', payload.choice);
+    formData.append('file', payload.file);
+
+    res = await fetch(`/api/reviews/${reviewId}/messages`, {
+      method: 'POST',
+      body: formData,
+    });
+  } else {
+    res = await fetch(`/api/reviews/${reviewId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+  }
   return handleResponse<{ message_id: string; seq: number }>(res);
+}
+
+export async function deleteReview(reviewId: string): Promise<void> {
+  const res = await fetch(`/api/reviews/${reviewId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok && res.status !== 204) {
+    await handleResponse(res);
+  }
 }
 
 export async function getReport(reviewId: string): Promise<ReportData> {

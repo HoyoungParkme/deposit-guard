@@ -5,6 +5,7 @@ import { ReviewSubject, ReviewCounters } from '../api/client';
 interface TopBarProps {
   subject?: ReviewSubject;
   counters?: ReviewCounters;
+  onDeleteReview?: () => void;
 }
 
 const buildingTypeNames: Record<string, string> = {
@@ -15,7 +16,7 @@ const buildingTypeNames: Record<string, string> = {
   other: '주택',
 };
 
-export const TopBar: React.FC<TopBarProps> = ({ subject, counters }) => {
+export const TopBar: React.FC<TopBarProps> = ({ subject, counters, onDeleteReview }) => {
   const formatSec = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -75,12 +76,24 @@ export const TopBar: React.FC<TopBarProps> = ({ subject, counters }) => {
           </Link>
 
           {subject && (
-            <Link
-              to="/"
-              className="text-xs font-semibold text-gray-700 border border-gray-300 rounded px-2.5 py-1.5 hover:bg-gray-50 transition"
-            >
-              새 검토
-            </Link>
+            <div className="flex items-center gap-1.5">
+              {onDeleteReview && (
+                <button
+                  type="button"
+                  onClick={onDeleteReview}
+                  className="text-xs font-semibold text-rose-600 border border-rose-200 bg-rose-50/50 rounded px-2.5 py-1.5 hover:bg-rose-100 transition cursor-pointer"
+                  title="원문·대화·의견서 데이터를 서버에서 즉시 영구 삭제합니다 (JSD-API-001 DELETE)"
+                >
+                  🗑️ 검토 삭제
+                </button>
+              )}
+              <Link
+                to="/"
+                className="text-xs font-semibold text-gray-700 border border-gray-300 rounded px-2.5 py-1.5 hover:bg-gray-50 transition"
+              >
+                새 검토
+              </Link>
+            </div>
           )}
         </div>
       </div>

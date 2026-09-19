@@ -9,6 +9,7 @@ import {
   getReview,
   listMessages,
   postMessage,
+  deleteReview,
   ApiError,
 } from '../api/client';
 
@@ -27,8 +28,10 @@ export const ReviewPage: React.FC = () => {
 
   // 되묻기 / 답변 입력 상태
   const [customInputText, setCustomInputText] = useState<string>('');
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -153,29 +156,44 @@ export const ReviewPage: React.FC = () => {
     }
   };
 
-  // 직접 텍스트 답변 또는 되묻기 발화 전송
+  const handleDeleteReview = async () => {
+    if (!id) return;
+    if (window.confirm('서버에 보관된 등기부 원문과 분석 대화가 즉시 영구 파기됩니다. 삭제하시겠습니까? (JSD-API-001 DELETE)')) {
+      try {
+        await deleteReview(id);
+      } catch {
+        // ignore
+      }
+      navigate('/');
+    }
+  };
+
+  // 직접 텍스트 답변 또는 되묻기 발화 전송 (파일 첨부 지원)
   const handleSendText = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !customInputText.trim() || isSubmitting) return;
+    if (!id || (!customInputText.trim() && !attachedFile) || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
       if (pendingQuestion) {
-        // 질문에 대한 텍스트 답변
+        // 질문에 대한 텍스트/파일 답변
         await postMessage(id, {
           kind: 'answer',
           question_id: pendingQuestion.question_id,
-          text: customInputText.trim(),
+          text: customInputText.trim() || undefined,
+          file: attachedFile || undefined,
         });
         setPendingQuestion(null);
       } else {
         // 되묻기 질문
         await postMessage(id, {
           kind: 'ask',
-          text: customInputText.trim(),
+          text: customInputText.trim() || undefined,
+          file: attachedFile || undefined,
         });
       }
       setCustomInputText('');
+      setAttachedFile(null);
       await loadMessages(id);
       await refreshReview(id);
     } catch (err: any) {
@@ -231,7 +249,7 @@ export const ReviewPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       {/* 고정 상단 바 */}
-      <TopBar subject={review.subject} counters={review.counters} />
+      <TopBar subject={review.subject} counters={review.counters} onDeleteReview={handleDeleteReview} />
 
       {/* 2열 레이아웃: 대화 타래 + 문서 패널 */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden" data-el="ui-2-review">
@@ -623,7 +641,46 @@ export const ReviewPage: React.FC = () => {
               </div>
             )}
 
-            <form onSubmit={handleSendText} className="max-w-2xl mx-auto flex gap-2">
+            {/* 첨부된 파일 표시 */}
+            {attachedFile && (
+              <div className="max-w-2xl mx-auto mb-2 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-xl px-3 py-1.5 text-xs text-blue-900">
+                <span className="flex items-center gap-1.5 truncate">
+                  <span>📎</span>
+                  <span className="font-semibold truncate">{attachedFile.name}</span>
+                  <span className="text-[11px] text-blue-600">({Math.round(attachedFile.size / 1024)} KB)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAttachedFile(null)}
+                  className="text-blue-500 hover:text-blue-800 ml-2 font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleSendText} className="max-w-2xl mx-auto flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setAttachedFile(e.target.files[0]);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isSubmitting}
+                className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl border border-gray-200 transition cursor-pointer flex-shrink-0"
+                title="토지 등기부 등 추가 서류 첨부 (JSD-UI-001 S-3)"
+              >
+                📎
+              </button>
+
               <input
                 type="text"
                 value={customInputText}
@@ -638,8 +695,8 @@ export const ReviewPage: React.FC = () => {
               />
               <button
                 type="submit"
-                disabled={!customInputText.trim() || isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold text-sm px-4 py-3 rounded-xl transition shadow-sm flex-shrink-0"
+                disabled={(!customInputText.trim() && !attachedFile) || isSubmitting}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold text-sm px-4 py-3 rounded-xl transition shadow-sm flex-shrink-0 cursor-pointer"
               >
                 {isSubmitting ? '전송 중...' : '보내기'}
               </button>
