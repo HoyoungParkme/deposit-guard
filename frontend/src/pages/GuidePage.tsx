@@ -103,7 +103,7 @@ export const GuidePage: React.FC = () => {
             내 소중한 전세 보증금, <br className="hidden sm:inline" />
             <span className="text-blue-600">어떻게 지켜주는지</span> 알려드립니다
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+          <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
             복잡한 등기부등본 용어와 깡통전세 계산이 어려우셨나요? <br className="hidden sm:inline" />
             등기부 1장이면 LH 심사관 수준의 권리분석과 계약서용 방어 특약까지 1분 만에 완성됩니다.
           </p>
@@ -134,7 +134,7 @@ export const GuidePage: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-2">
               어떤 문제를 어떻게 해결하나요?
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-sm text-slate-600 mt-1">
               기존 부동산 시장의 정보 비대칭과 전세사기 사각지대를 기술로 해소합니다.
             </p>
           </div>
@@ -143,10 +143,10 @@ export const GuidePage: React.FC = () => {
             <div className="bg-gradient-to-b from-rose-50/50 to-white border border-rose-200/80 rounded-xl p-5 space-y-3">
               <div className="text-2xl">⚠️ 1. 깡통전세 공포</div>
               <h3 className="font-bold text-slate-900 text-sm">부채비율 계산의 어려움</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-700 leading-relaxed">
                 집값 대비 근저당과 앞선 보증금이 얼마인지 몰라 경매로 넘어갔을 때 내 보증금을 돌려받을 수 있는지 불안합니다.
               </p>
-              <div className="pt-2 border-t border-rose-100 text-xs font-medium text-blue-700 bg-blue-50/50 p-2.5 rounded-lg">
+              <div className="pt-2 border-t border-rose-100 text-sm font-medium text-blue-700 bg-blue-50/50 p-2.5 rounded-lg">
                 💡 <strong>해결</strong>: 국토부 실거래가 매매가와 선순위 채권을 취합하여 LH 90% 안전 기준 부채비율을 자동 계산합니다.
               </div>
             </div>
@@ -154,10 +154,10 @@ export const GuidePage: React.FC = () => {
             <div className="bg-gradient-to-b from-amber-50/50 to-white border border-amber-200/80 rounded-xl p-5 space-y-3">
               <div className="text-2xl">💣 2. 숨겨진 법적 지뢰</div>
               <h3 className="font-bold text-slate-900 text-sm">신탁등기·임차권등기</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-700 leading-relaxed">
                 신탁회사 동의 없는 계약은 무효이며, 이전 세입자에게 보증금을 돌려주지 않은 임대인은 다시 사고를 냅니다.
               </p>
-              <div className="pt-2 border-t border-amber-100 text-xs font-medium text-indigo-700 bg-indigo-50/50 p-2.5 rounded-lg">
+              <div className="pt-2 border-t border-amber-100 text-sm font-medium text-indigo-700 bg-indigo-50/50 p-2.5 rounded-lg">
                 💡 <strong>해결</strong>: 11대 핵심 위험 신호(신탁, 임차권등기, 압류, 불법개조 등)를 전수 자동 검출하여 경고합니다.
               </div>
             </div>
@@ -165,10 +165,10 @@ export const GuidePage: React.FC = () => {
             <div className="bg-gradient-to-b from-emerald-50/50 to-white border border-emerald-200/80 rounded-xl p-5 space-y-3">
               <div className="text-2xl">📝 3. 무방비 계약서</div>
               <h3 className="font-bold text-slate-900 text-sm">말뿐인 구두 약속의 한계</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
+              <p className="text-sm text-slate-700 leading-relaxed">
                 "문제없다"는 중개인 말만 믿고 도장을 찍었다가 보증보험이 거절되거나 당일 대출이 발생하면 보호받지 못합니다.
               </p>
-              <div className="pt-2 border-t border-emerald-100 text-xs font-medium text-emerald-700 bg-emerald-50/50 p-2.5 rounded-lg">
+              <div className="pt-2 border-t border-emerald-100 text-sm font-medium text-emerald-700 bg-emerald-50/50 p-2.5 rounded-lg">
                 💡 <strong>해결</strong>: 법무부 표준 특약 기반 6대 방어 특약문구를 생성해 계약서에 복사·붙여넣을 수 있게 제공합니다.
               </div>
             </div>
@@ -184,7 +184,7 @@ export const GuidePage: React.FC = () => {
             <h2 className="text-2xl font-bold text-slate-900 mt-2">
               클릭 1번으로 시작하는 4단계 안전 진단
             </h2>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-sm text-slate-600 mt-1">
               아래 각 단계의 실제 서비스 캡처 화면을 확인해보세요. (이미지 클릭 시 크게 보기)
             </p>
           </div>
@@ -205,7 +205,7 @@ export const GuidePage: React.FC = () => {
                       {s.badge}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-400 font-medium">Deposit Guard Walkthrough</span>
+                  <span className="text-xs text-slate-500 font-medium">Deposit Guard Walkthrough</span>
                 </div>
 
                 {/* 본문 콘텐츠 */}
@@ -214,7 +214,7 @@ export const GuidePage: React.FC = () => {
                     <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-2">
                       {s.title}
                     </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{s.summary}</p>
+                    <p className="text-base text-slate-700 leading-relaxed">{s.summary}</p>
                   </div>
 
                   {/* 실제 스크린샷 미리보기 */}
@@ -238,7 +238,7 @@ export const GuidePage: React.FC = () => {
                       <span>✨</span>
                       <span>이 단계의 핵심 기능</span>
                     </h4>
-                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-600">
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
                       {s.keyPoints.map((point, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-blue-500 font-bold mt-0.5">✓</span>
@@ -249,7 +249,7 @@ export const GuidePage: React.FC = () => {
                   </div>
 
                   {/* 활용 팁 */}
-                  <div className="text-xs text-slate-600 bg-blue-50/60 border border-blue-200/50 rounded-lg p-3.5 leading-relaxed">
+                  <div className="text-sm text-slate-700 bg-blue-50/60 border border-blue-200/50 rounded-lg p-3.5 leading-relaxed">
                     {s.tips}
                   </div>
                 </div>
@@ -265,31 +265,31 @@ export const GuidePage: React.FC = () => {
             <span>자주 묻는 질문 (FAQ)</span>
           </h2>
 
-          <div className="space-y-4 text-xs sm:text-sm">
+          <div className="space-y-4 text-sm">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <h3 className="font-bold text-slate-900">Q. 등기부등본 파일이 없는데 어떻게 테스트하나요?</h3>
-              <p className="text-slate-600 leading-relaxed text-xs">
+              <p className="text-slate-700 leading-relaxed text-sm">
                 메인 페이지 시작 화면의 <strong>‘등기부 파일이 없다면? 실제 사례로 체험하기’</strong> 섹션에서 [신길동 다가구(깡통전세 위험)], [봉천동 근생빌라(대출불가)], [역삼동 오피스텔(안심매물)] 카드를 클릭하시면 별도의 파일 업로드 없이 1초 만에 실제 데이터로 검토를 진행할 수 있습니다.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <h3 className="font-bold text-slate-900">Q. 등기부등본은 어디서 발급받나요?</h3>
-              <p className="text-slate-600 leading-relaxed text-xs">
+              <p className="text-slate-700 leading-relaxed text-sm">
                 대법원 인터넷등기소(www.iros.go.kr)에서 주소 검색 후 700원에 [등기사항전부증명서(말소사항포함)]를 열람하여 PDF로 저장할 수 있습니다. 공인중개사에게 매물을 문의할 때 전달받은 등기부 사진이나 PDF 파일을 그대로 등록하셔도 됩니다.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <h3 className="font-bold text-slate-900">Q. 비용이나 회원가입이 필요한가요?</h3>
-              <p className="text-slate-600 leading-relaxed text-xs">
+              <p className="text-slate-700 leading-relaxed text-sm">
                 별도의 회원가입이나 로그인 없이 100% 무료로 모든 권리분석 및 특약 생성 기능을 이용하실 수 있습니다. 심사위원 및 모든 이용자가 언제든지 편리하게 체험 가능합니다.
               </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
               <h3 className="font-bold text-slate-900">Q. 여기서 나온 특약은 법적으로 효력이 있나요?</h3>
-              <p className="text-slate-600 leading-relaxed text-xs">
+              <p className="text-slate-700 leading-relaxed text-sm">
                 네. 본 서비스의 6대 맞춤 특약은 주택임대차보호법 및 법무부 표준 주택임대차계약서 특약 조항을 바탕으로 작성되었습니다. 진단서의 [특약 복사] 버튼을 누른 후 계약서의 특약사항 란에 그대로 기재하시면 계약 당사자 간의 법적 구속력을 가집니다.
               </p>
             </div>
@@ -301,7 +301,7 @@ export const GuidePage: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-black">
             불안한 전세 계약, 지금 1분 만에 지키세요
           </h2>
-          <p className="text-blue-100 text-xs sm:text-sm max-w-xl mx-auto">
+          <p className="text-blue-200 text-sm sm:text-base max-w-xl mx-auto">
             국토부 실거래가와 LH 전세임대 심사기준으로 깡통전세와 법적 지뢰를 사전에 차단합니다.
           </p>
           <div className="pt-2">
@@ -332,7 +332,7 @@ export const GuidePage: React.FC = () => {
       )}
 
       {/* 푸터 */}
-      <footer className="w-full border-t border-slate-200 bg-white py-6 px-4 text-center text-xs text-slate-400">
+      <footer className="w-full border-t border-slate-200 bg-white py-6 px-4 text-center text-sm text-slate-500">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>보증금지킴은 법률 상담이나 공인중개사를 대체하지 않는 참고용 권리분석 의견서입니다.</p>
           <p className="text-[11px]">

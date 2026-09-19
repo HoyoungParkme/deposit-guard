@@ -122,14 +122,14 @@ export const Composer: React.FC<ComposerProps> = ({
               ✓ 예시 등기부 선택됨
             </span>
             <p className="font-bold text-gray-900 mt-1">{selectedSample.title}</p>
-            <p className="text-xs text-gray-500">{selectedSample.summary}</p>
+            <p className="text-xs text-gray-600">{selectedSample.summary}</p>
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (onClearSample) onClearSample();
               }}
-              className="text-xs text-gray-400 hover:text-red-500 underline mt-2"
+              className="text-xs text-gray-600 hover:text-red-500 underline mt-2"
             >
               직접 파일 올리기로 변경
             </button>
@@ -138,16 +138,16 @@ export const Composer: React.FC<ComposerProps> = ({
           <div className="flex flex-col items-center gap-1">
             <span className="text-2xl">📄</span>
             <p className="font-semibold text-gray-900 text-sm">{file.name}</p>
-            <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            <p className="text-xs text-gray-600">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
             <span className="text-xs text-blue-600 font-medium underline mt-1">다른 파일 선택</span>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-1.5">
             <span className="text-3xl text-gray-400">📄</span>
-            <p className="text-sm font-semibold text-gray-800">
+            <p className="text-base font-semibold text-gray-800">
               등기부등본 PDF를 끌어다 놓거나 클릭해 첨부하세요
             </p>
-            <p className="text-xs text-gray-400">PDF, JPG, PNG · 10MB, 20쪽 이하만 가능</p>
+            <p className="text-xs text-gray-600">PDF, JPG, PNG · 10MB, 20쪽 이하만 가능</p>
           </div>
         )}
       </div>
@@ -156,7 +156,7 @@ export const Composer: React.FC<ComposerProps> = ({
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* 보증금 입력란 */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
             보증금 (만원)
             {deposit && <span className="ml-2 font-normal text-blue-600">{formatDepositKorean(deposit)}</span>}
           </label>
@@ -170,13 +170,13 @@ export const Composer: React.FC<ComposerProps> = ({
               placeholder="예: 20000 (2억원)"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <span className="absolute right-3 top-2 text-xs text-gray-400">만원</span>
+            <span className="absolute right-3 top-2 text-xs text-gray-600">만원</span>
           </div>
         </div>
 
         {/* 계약 형태 선택 */}
         <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">계약 형태</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">계약 형태</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -210,21 +210,21 @@ export const Composer: React.FC<ComposerProps> = ({
           <button
             type="button"
             onClick={() => setShowCounterparty(true)}
-            className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 font-medium"
+            className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1 font-medium"
           >
             <span>+ 임대인(집주인) 이름 입력 (선택: 소유자 일치 확인)</span>
           </button>
         ) : (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-semibold text-gray-700">임대인 이름 (선택)</label>
+              <label className="text-sm font-semibold text-gray-700">임대인 이름 (선택)</label>
               <button
                 type="button"
                 onClick={() => {
                   setShowCounterparty(false);
                   setCounterpartyName('');
                 }}
-                className="text-xs text-gray-400 hover:text-gray-600"
+                className="text-xs text-gray-600 hover:text-gray-800"
               >
                 닫기
               </button>
@@ -249,7 +249,7 @@ export const Composer: React.FC<ComposerProps> = ({
 
       {/* 하단 버튼 및 안내 줄 */}
       <div className="mt-4 pt-3 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="text-xs text-gray-500" data-el="3b">
+        <div className="text-xs text-gray-600" data-el="3b">
           {!hasSource ? (
             <span>등기부 파일을 첨부하거나 아래 예시 카드를 선택하세요</span>
           ) : !hasValidDeposit ? (
@@ -262,7 +262,7 @@ export const Composer: React.FC<ComposerProps> = ({
         <button
           type="submit"
           disabled={!canSubmit}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-sm transition shadow-sm ${
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-sm min-h-[44px] transition shadow-sm ${
             canSubmit
               ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.99]'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'

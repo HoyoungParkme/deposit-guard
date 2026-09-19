@@ -47,6 +47,12 @@ export const StartPage: React.FC = () => {
     }
   };
 
+  const getSampleRiskStyle = (title: string) => {
+    if (title.includes('다가구')) return { border: 'border-l-4 border-l-rose-500', bg: 'bg-rose-50/40', badge: '🚨 위험', badgeClass: 'bg-rose-100 text-rose-700' };
+    if (title.includes('빌라')) return { border: 'border-l-4 border-l-amber-500', bg: 'bg-amber-50/40', badge: '⚠️ 주의', badgeClass: 'bg-amber-100 text-amber-700' };
+    return { border: 'border-l-4 border-l-emerald-500', bg: 'bg-emerald-50/30', badge: '✅ 안전', badgeClass: 'bg-emerald-100 text-emerald-700' };
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <TopBar />
@@ -76,7 +82,7 @@ export const StartPage: React.FC = () => {
           >
             이 집, 계약해도 될까요?
           </h1>
-          <p className="text-sm sm:text-base text-gray-600" data-el="2c">
+          <p className="text-base sm:text-lg text-gray-600" data-el="2c">
             확인할 것을 스스로 정해 검토하고 의견서를 냅니다.
           </p>
         </div>
@@ -95,45 +101,51 @@ export const StartPage: React.FC = () => {
         {/* 예시 등기부 카드 3개 */}
         <div className="mb-10" data-el="4">
           <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500">
               등기부 파일이 없다면? 실제 사례로 체험하기
             </h2>
-            <span className="text-[11px] text-gray-400">실제 등기부 파싱 및 분석</span>
+            <span className="text-xs text-gray-500">실제 등기부 파싱 및 분석</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             {samples.map((sample) => {
               const isSelected = selectedSample?.sample_id === sample.sample_id;
+              const riskStyle = getSampleRiskStyle(sample.title);
               return (
                 <div
                   key={sample.sample_id}
                   onClick={() => handleSelectSample(sample)}
                   className={`p-4 rounded-xl border-2 transition cursor-pointer flex flex-col justify-between ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm'
-                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                      ? `border-blue-600 bg-blue-50/60 ring-2 ring-blue-500/20 shadow-sm ${riskStyle.border}`
+                      : `border-gray-200 ${riskStyle.bg} ${riskStyle.border} hover:shadow-md`
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-2">
-                      <span className="text-xl">
-                        {sample.title.includes('아파트') ? '🏢' : sample.title.includes('빌라') ? '🏡' : '🏘️'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">
+                          {sample.title.includes('아파트') ? '🏢' : sample.title.includes('빌라') ? '🏡' : '🏘️'}
+                        </span>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${riskStyle.badgeClass}`}>
+                          {riskStyle.badge}
+                        </span>
+                      </div>
                       {isSelected ? (
                         <span className="text-[11px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
                           선택됨
                         </span>
                       ) : (
-                        <span className="text-[11px] text-gray-400 font-medium">선택하기</span>
+                        <span className="text-[11px] text-gray-500 font-medium">선택하기</span>
                       )}
                     </div>
-                    <h3 className="font-bold text-gray-900 text-sm mb-1">{sample.title}</h3>
-                    <p className="text-xs text-gray-500 leading-snug line-clamp-2">
+                    <h3 className="font-bold text-gray-900 text-base mb-1">{sample.title}</h3>
+                    <p className="text-sm text-gray-600 leading-snug line-clamp-2">
                       {sample.summary}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                  <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-sm">
                     <span className="text-gray-500">{sample.region}</span>
                     <span className="font-semibold text-gray-800">
                       {sample.contract_type === 'jeonse' ? '전세' : '월세'}{' '}
@@ -147,7 +159,7 @@ export const StartPage: React.FC = () => {
         </div>
 
         {/* 서비스 작동 원리 및 가이드 (어떤 문제를 어떻게 해결하나요?) */}
-        <div className="mb-12 bg-white border border-gray-200/90 rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="mb-8 bg-white border border-gray-200/90 rounded-2xl p-6 sm:p-8 shadow-xs">
           <div className="text-center max-w-xl mx-auto mb-8">
             <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200/60 px-3 py-1 rounded-full">
               서비스 안내 & 권리분석 가이드
@@ -155,13 +167,13 @@ export const StartPage: React.FC = () => {
             <h2 className="text-xl font-bold text-gray-900 mt-2">
               등기부등본 1장이면 전세 계약 전 안전을 지킬 수 있습니다
             </h2>
-            <p className="text-xs text-gray-500 mt-1.5">
+            <p className="text-xs text-gray-600 mt-1.5">
               어려운 부동산 등기 용어와 복잡한 계산을 AI 권리분석 에이전트가 1분 만에 진단합니다.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4.5 space-y-2">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2">
               <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
                 1
               </div>
@@ -171,7 +183,7 @@ export const StartPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4.5 space-y-2">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2">
               <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
                 2
               </div>
@@ -181,7 +193,7 @@ export const StartPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4.5 space-y-2">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2">
               <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
                 3
               </div>
@@ -200,13 +212,13 @@ export const StartPage: React.FC = () => {
             <div className="flex items-center gap-2 flex-shrink-0">
               <Link
                 to="/guide"
-                className="font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition"
+                className="font-bold text-indigo-700 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-4 py-2 text-sm rounded-lg shadow-2xs transition"
               >
                 📸 화면별 가이드 보기 →
               </Link>
               <Link
                 to="/criteria"
-                className="font-bold text-blue-600 hover:text-blue-700 bg-white border border-blue-200 px-3.5 py-1.5 rounded-lg shadow-2xs transition"
+                className="font-bold text-blue-600 hover:text-blue-700 bg-white border border-blue-200 px-4 py-2 text-sm rounded-lg shadow-2xs transition"
               >
                 ⚖️ 판정 기준표 →
               </Link>
@@ -223,7 +235,7 @@ export const StartPage: React.FC = () => {
             <span>🔒</span>
             <span>개인정보 보호 및 자동 파기 원칙</span>
           </p>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
+          <p className="text-xs text-slate-600 leading-relaxed">
             올려주신 등기부는 분석 목적으로만 일시 사용되며, 24시간 후 자동 영구 파기됩니다.
             서버에 보관되거나 AI 모델 학습에 사용되지 않습니다.
           </p>
@@ -232,7 +244,7 @@ export const StartPage: React.FC = () => {
 
       {/* 푸터 */}
       <footer
-        className="w-full border-t border-gray-200 bg-white py-6 px-4 text-center text-xs text-gray-400"
+        className="w-full border-t border-gray-200 bg-white py-6 px-4 text-center text-sm text-gray-500"
         data-el="6"
       >
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">

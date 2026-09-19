@@ -54,7 +54,7 @@ export const CriteriaPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 whitespace-nowrap ${
+              className={`px-4 py-2.5 text-sm font-bold rounded-t-xl transition border-b-2 whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-600 bg-white shadow-xs'
                   : 'border-transparent text-gray-500 hover:text-gray-900'
@@ -66,7 +66,7 @@ export const CriteriaPage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-gray-400 animate-pulse">
+          <div className="p-12 text-center text-sm text-gray-500 animate-pulse">
             기준표를 불러오는 중...
           </div>
         ) : (
@@ -76,7 +76,7 @@ export const CriteriaPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h2 className="text-sm font-bold text-gray-900">위험 등급 분류 기준 (LH 전세임대 권리분석 기준)</h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-600">
                     부채비율(집값 대비 근저당+선순위보증금+내 보증금)과 위험 신호 여부에 따라 3단계로 엄격하게 판정합니다.
                   </p>
                 </div>
@@ -89,7 +89,7 @@ export const CriteriaPage: React.FC = () => {
                       </span>
                       <span className="text-xs font-bold text-emerald-900">부채비율 ≤ 70%</span>
                     </div>
-                    <p className="text-xs text-emerald-950 leading-relaxed">
+                    <p className="text-sm text-emerald-950 leading-relaxed">
                       선순위 채권과 보증금의 합이 집값의 70% 이하이며, 압류·신탁·경매 등 위험 신호가 없는 정상적인 매물입니다.
                     </p>
                   </div>
@@ -101,7 +101,7 @@ export const CriteriaPage: React.FC = () => {
                       </span>
                       <span className="text-xs font-bold text-amber-900">부채비율 70% ~ 90%</span>
                     </div>
-                    <p className="text-xs text-amber-950 leading-relaxed">
+                    <p className="text-sm text-amber-950 leading-relaxed">
                       부채비율이 다소 높거나 최근 근저당/잦은 소유권 이전 등 주의 신호가 있는 매물입니다. 전세보증보험 가입과 안전 특약이 필수입니다.
                     </p>
                   </div>
@@ -113,7 +113,7 @@ export const CriteriaPage: React.FC = () => {
                       </span>
                       <span className="text-xs font-bold text-rose-900">부채비율 &gt; 90%</span>
                     </div>
-                    <p className="text-xs text-rose-950 leading-relaxed">
+                    <p className="text-sm text-rose-950 leading-relaxed">
                       집값의 90%를 초과하는 깡통전세이거나, 경매·압류·가등기·임차권등기명령 등 심각한 위험 신호가 확인되어 계약을 피해야 합니다.
                     </p>
                   </div>
@@ -126,7 +126,7 @@ export const CriteriaPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h2 className="text-sm font-bold text-gray-900">탐지하는 11가지 부동산 위험 신호 (Red Flags)</h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-600">
                     등기부 갑구·을구 및 HUG 상습 채무불이행자 명단, 건축물대장을 통해 실시간 교차 검증합니다.
                   </p>
                 </div>
@@ -154,7 +154,7 @@ export const CriteriaPage: React.FC = () => {
                         </span>
                         <span className="text-xs font-bold text-gray-900">{sig.label}</span>
                       </div>
-                      <span className="text-[11px] text-gray-400">{sig.source || '공식 기준'}</span>
+                      <span className="text-[11px] text-gray-500">{sig.source || '공식 기준'}</span>
                     </div>
                   ))}
                 </div>
@@ -166,13 +166,13 @@ export const CriteriaPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h2 className="text-sm font-bold text-gray-900">주택임대차보호법 소액임차인 최우선변제금 기준표</h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-600">
                     경매 시 다른 근저당권자보다 먼저 보장받을 수 있는 법정 최소 보증금 한도입니다. (2023년 최신 개정)
                   </p>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left border border-gray-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-sm text-left border border-gray-200 rounded-xl overflow-hidden">
                     <thead className="bg-slate-50 text-gray-700 font-bold border-b border-gray-200">
                       <tr>
                         <th className="p-3">지역 구분</th>
@@ -212,7 +212,7 @@ export const CriteriaPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="space-y-1">
                   <h2 className="text-sm font-bold text-gray-900">물건 유형별 AI 에이전트 필수 점검 체크리스트</h2>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-sm text-gray-600">
                     아파트, 다세대, 다가구 등 각 주택의 특성에 맞추어 에이전트가 점검하는 항목입니다.
                   </p>
                 </div>
@@ -220,7 +220,7 @@ export const CriteriaPage: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="border border-gray-200 rounded-xl p-4 space-y-2">
                     <span className="text-xs font-bold text-blue-600">🏢 아파트 / 오피스텔</span>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <ul className="text-sm text-gray-600 space-y-1">
                       <li>• 동일 단지/면적 최근 6개월 실거래가 시세 확인</li>
                       <li>• 을구 근저당 채권최고액 합산 및 부채비율 계산</li>
                       <li>• 소유자 일치 여부 및 신탁 등기 유무 확인</li>
@@ -229,7 +229,7 @@ export const CriteriaPage: React.FC = () => {
 
                   <div className="border border-gray-200 rounded-xl p-4 space-y-2">
                     <span className="text-xs font-bold text-amber-600">🏡 신축 다세대 / 연립 (빌라)</span>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <ul className="text-sm text-gray-600 space-y-1">
                       <li>• 인근 유사 빌라 실거래가 추정 및 공시가격 대조</li>
                       <li>• 건축물대장상 위반건축물 표기 유무 검증</li>
                       <li>• 단기 소유권 변동 및 근저당 급증 여부 추적</li>
@@ -238,7 +238,7 @@ export const CriteriaPage: React.FC = () => {
 
                   <div className="border border-gray-200 rounded-xl p-4 space-y-2">
                     <span className="text-xs font-bold text-rose-600">🏘️ 다가구 / 단독주택</span>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <ul className="text-sm text-gray-600 space-y-1">
                       <li>• 건물 및 토지 등기부 2종 일치 여부 대조</li>
                       <li>• 다른 모든 세입자의 선순위 보증금 합산 검토</li>
                       <li>• 임차권등기명령 등 과거 분쟁 이력 확인</li>
@@ -247,7 +247,7 @@ export const CriteriaPage: React.FC = () => {
 
                   <div className="border border-gray-200 rounded-xl p-4 space-y-2">
                     <span className="text-xs font-bold text-indigo-600">🛡️ 공통 검증 절차</span>
-                    <ul className="text-xs text-gray-600 space-y-1">
+                    <ul className="text-sm text-gray-600 space-y-1">
                       <li>• HUG 상습 채무불이행자(악성 임대인) 명단 실시간 대조</li>
                       <li>• 대리 계약 여부 및 인감증명서/위임장 검증 질문</li>
                       <li>• 전세보증보험 가입 요건 부합 여부 산출</li>

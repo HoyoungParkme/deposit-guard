@@ -199,7 +199,7 @@ export const ReviewPage: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           <span className="text-3xl animate-spin">⏳</span>
           <p className="text-sm font-semibold text-gray-700">등기부 및 실시간 진단 연결 중...</p>
-          <p className="text-xs text-gray-400">잠시만 기다려 주세요.</p>
+          <p className="text-xs text-gray-500">잠시만 기다려 주세요.</p>
         </div>
       </div>
     );
@@ -257,7 +257,7 @@ export const ReviewPage: React.FC = () => {
           {/* 대화 타래 스크롤 영역 */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
             {/* 시스템 안내 카드 */}
-            <div className="max-w-2xl mx-auto bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700 space-y-1.5 shadow-sm">
+            <div className="max-w-2xl mx-auto bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm text-slate-700 space-y-1.5 shadow-sm">
               <div className="flex items-center justify-between font-semibold text-slate-900">
                 <span className="flex items-center gap-1.5">
                   <span>🏢</span>
@@ -267,7 +267,7 @@ export const ReviewPage: React.FC = () => {
                   {review.subject.contract_type === 'jeonse' ? '전세' : '월세'} {review.subject.deposit_manwon.toLocaleString()}만원
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-xs text-slate-600">
                 AI 권리분석 에이전트가 등기부와 공공데이터를 교차 분석하고 있습니다.
               </p>
             </div>
@@ -284,7 +284,7 @@ export const ReviewPage: React.FC = () => {
                       <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                       <span>등기부 및 공공데이터 권리분석 시작 중...</span>
                     </div>
-                    <p className="text-slate-500 text-[11px]">등기부 표제부, 갑구, 을구 권리관계를 파싱하고 있습니다.</p>
+                    <p className="text-slate-600 text-xs">등기부 표제부, 갑구, 을구 권리관계를 파싱하고 있습니다.</p>
                   </div>
                 </div>
               )}
@@ -412,7 +412,7 @@ export const ReviewPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <span className="text-blue-600 font-bold text-sm">✦</span>
                             <span>AI 권리분석 에이전트 추론 & 데이터 교차 검증</span>
-                            <span className="text-[10px] font-normal text-slate-500 bg-white border border-slate-200 rounded-full px-2 py-0.5">
+                            <span className="text-[11px] font-normal text-slate-600 bg-white border border-slate-200 rounded-full px-2 py-0.5">
                               {validTools.length}개 단계 완료
                             </span>
                           </div>
@@ -422,20 +422,20 @@ export const ReviewPage: React.FC = () => {
                           {validTools.map((t, tIdx) => (
                             <div
                               key={tIdx}
-                              className="flex items-start gap-2.5 text-[11px] leading-relaxed"
+                              className="flex items-start gap-2.5 text-xs leading-relaxed"
                             >
                               <span className="text-sm flex-shrink-0 mt-0.5">{t.icon}</span>
                               <div className="flex-1">
                                 <div className="flex items-center gap-1.5 font-medium text-slate-800">
                                   <span>{t.title}</span>
                                   {t.elapsed ? (
-                                    <span className="text-[10px] text-slate-400 font-normal">
+                                    <span className="text-[11px] text-slate-500 font-normal">
                                       ({t.elapsed}ms)
                                     </span>
                                   ) : null}
                                 </div>
                                 {t.desc && (
-                                  <p className="text-slate-500 text-[11px] mt-0.5 font-normal">
+                                  <p className="text-slate-600 text-xs mt-0.5 font-normal">
                                     {t.desc}
                                   </p>
                                 )}
@@ -497,7 +497,7 @@ export const ReviewPage: React.FC = () => {
                       </div>
 
                       <div
-                        className={`max-w-xl rounded-2xl p-4 text-xs leading-relaxed shadow-xs ${
+                        className={`max-w-xl rounded-2xl p-4 text-sm leading-relaxed shadow-xs ${
                           isAgent
                             ? 'bg-slate-50/90 border border-slate-200/90 rounded-tl-none text-slate-900'
                             : 'bg-blue-600 text-white rounded-tr-none'
@@ -507,14 +507,14 @@ export const ReviewPage: React.FC = () => {
 
                         {/* 권리 요약 수치 카드인 경우 */}
                         {msg.kind === 'numbers' && msg.data && (
-                          <div className="mt-2.5 bg-white border border-slate-200 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-700 shadow-xs">
+                          <div className="mt-2.5 bg-white border border-slate-200 rounded-xl p-3 space-y-1.5 text-xs text-slate-700 shadow-xs">
                             <div className="flex justify-between items-center">
-                              <span className="text-slate-500">선순위 근저당:</span>
+                              <span className="text-slate-600">선순위 근저당:</span>
                               <span className="font-bold text-slate-900 text-xs">{(msg.data.senior_mortgage_manwon || 0).toLocaleString()}만원</span>
                             </div>
                             {msg.data.debt_ratio !== undefined && (
                               <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                                <span className="text-slate-500">부채비율 (깡통전세 위험도):</span>
+                                <span className="text-slate-600">부채비율 (깡통전세 위험도):</span>
                                 <span className="font-bold text-blue-600 text-xs">{msg.data.debt_ratio}%</span>
                               </div>
                             )}
@@ -528,7 +528,7 @@ export const ReviewPage: React.FC = () => {
                               <button
                                 key={cIdx}
                                 onClick={() => handleCitationClick(c.block_id, c.label)}
-                                className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-amber-200 transition cursor-pointer"
+                                className="inline-flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-semibold px-2 py-0.5 rounded-md border border-amber-200 transition cursor-pointer"
                               >
                                 <span>📍</span>
                                 <span>{c.label}</span>
@@ -550,7 +550,7 @@ export const ReviewPage: React.FC = () => {
                     <p className="font-bold text-xs text-amber-950">{pendingQuestion.text}</p>
                   </div>
                   {pendingQuestion.why && (
-                    <p className="text-[11px] text-amber-900/80 leading-relaxed bg-white/70 border border-amber-200/60 rounded-xl p-2.5">
+                    <p className="text-xs text-amber-900/80 leading-relaxed bg-white/70 border border-amber-200/60 rounded-xl p-2.5">
                       💡 <strong>확인 이유:</strong> {pendingQuestion.why}
                     </p>
                   )}
@@ -590,12 +590,12 @@ export const ReviewPage: React.FC = () => {
                     ? '선택지를 누르거나 직접 답변을 입력하세요...'
                     : '궁금한 점이나 추가 조건을 질문해보세요 (예: 근저당이 왜 위험한가요?)'
                 }
-                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
               />
               <button
                 type="submit"
                 disabled={!customInputText.trim() || isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shadow-sm flex-shrink-0"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-bold text-sm px-4 py-3 rounded-xl transition shadow-sm flex-shrink-0"
               >
                 {isSubmitting ? '전송 중...' : '보내기'}
               </button>

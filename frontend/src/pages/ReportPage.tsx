@@ -121,7 +121,7 @@ export const ReportPage: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           <span className="text-3xl animate-spin">⏳</span>
           <p className="text-sm font-semibold text-gray-700">보증금 진단 의견서를 불러오는 중...</p>
-          <p className="text-xs text-gray-400">잠시만 기다려 주세요.</p>
+          <p className="text-xs text-gray-500">잠시만 기다려 주세요.</p>
         </div>
       </div>
     );
@@ -135,7 +135,7 @@ export const ReportPage: React.FC = () => {
           <div className="bg-white border border-red-200 rounded-2xl p-8 max-w-md w-full text-center shadow-sm">
             <span className="text-3xl mb-2 inline-block">⚠️</span>
             <h2 className="text-lg font-bold text-gray-900 mb-2">의견서를 열 수 없습니다</h2>
-            <p className="text-xs text-gray-600 mb-6 leading-relaxed">
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               {error || '의견서가 아직 준비되지 않았거나 보관 기간이 만료되었습니다.'}
             </p>
             {review ? (
@@ -202,7 +202,7 @@ export const ReportPage: React.FC = () => {
       <div className="max-w-4xl mx-auto w-full p-4 sm:p-6 lg:p-8 space-y-6">
         {/* 상단 네비게이션 & 액션 버튼 */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 pb-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <Link to="/" className="hover:text-blue-600 transition">
               홈
             </Link>
@@ -217,7 +217,7 @@ export const ReportPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsOverrideOpen(true)}
-              className="bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3.5 py-2 rounded-xl border border-gray-200 shadow-sm transition flex items-center gap-1.5"
+              className="bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3.5 py-2 rounded-xl border border-gray-200 shadow-sm transition flex items-center gap-1.5"
             >
               <span>✏️</span>
               <span>시세·금액 직접 수정</span>
@@ -225,14 +225,14 @@ export const ReportPage: React.FC = () => {
             <button
               onClick={handleCreateShare}
               disabled={isSharing}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5"
             >
               <span>🔗</span>
               <span>{isSharing ? '생성 중...' : '의견서 공유하기'}</span>
             </button>
             <button
               onClick={() => window.print()}
-              className="bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3 py-2 rounded-xl border border-gray-200 shadow-sm transition"
+              className="bg-white hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2 rounded-xl border border-gray-200 shadow-sm transition"
               title="인쇄하기"
             >
               🖨️
@@ -244,22 +244,22 @@ export const ReportPage: React.FC = () => {
         <div className={`rounded-3xl bg-gradient-to-r ${gradeColors.banner} text-white p-6 sm:p-8 shadow-md`}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1 rounded-full border border-white/30">
+              <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white text-sm font-bold px-3 py-1 rounded-full border border-white/30">
                 <span>{gradeColors.icon}</span>
                 <span>LH 전세임대 권리분석 기준</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                 보증금 위험도: <span className="underline decoration-white/50">{gradeColors.label}</span>
               </h1>
-              <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-xl">
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed max-w-xl">
                 {report.summary}
               </p>
             </div>
 
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20 text-center flex-shrink-0 min-w-[140px]">
-              <span className="text-[11px] text-white/80 block mb-1">부채비율 (깡통전세 지수)</span>
+              <span className="text-xs text-white/80 block mb-1">부채비율 (깡통전세 지수)</span>
               <span className="text-3xl font-black">{debtRatioVal > 0 ? `${debtRatioVal}%` : '산정 불가'}</span>
-              <span className="text-[10px] text-white/70 block mt-1">
+              <span className="text-[11px] text-white/70 block mt-1">
                 {debtRatioVal > 90 ? '위험 (90% 초과)' : debtRatioVal > 70 ? '주의 (70~90%)' : '안전 (70% 이하)'}
               </span>
             </div>
@@ -268,8 +268,8 @@ export const ReportPage: React.FC = () => {
           {/* 판정 핵심 근거 목록 */}
           {report.reasons && report.reasons.length > 0 && (
             <div className="mt-6 pt-5 border-t border-white/20 space-y-1.5">
-              <span className="text-xs font-bold text-white/90 block">📌 주요 판정 사유:</span>
-              <ul className="space-y-1 text-xs text-white/85">
+              <span className="text-sm font-bold text-white/90 block">📌 주요 판정 사유:</span>
+              <ul className="space-y-1 text-sm text-white/85">
                 {report.reasons.map((r, rIdx) => (
                   <li key={rIdx} className="flex items-start gap-1.5">
                     <span className="text-white/60">•</span>
@@ -284,11 +284,11 @@ export const ReportPage: React.FC = () => {
         {/* 2. 권리분석 & 부채비율 상세 카드 */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <span>📊</span>
               <span>권리관계 및 보증금 보호 분석</span>
             </h2>
-            <span className="text-xs text-gray-400">단위: 만원</span>
+            <span className="text-xs text-gray-500">단위: 만원</span>
           </div>
 
           {/* 부채비율 게이지 바 */}
@@ -305,7 +305,7 @@ export const ReportPage: React.FC = () => {
                 style={{ width: `${Math.min(debtRatioVal, 100)}%` }}
               />
             </div>
-            <div className="flex justify-between text-[10px] text-gray-400 px-0.5">
+            <div className="flex justify-between text-[11px] text-gray-500 px-0.5">
               <span>0%</span>
               <span className="text-emerald-600">70% (안전 기준선)</span>
               <span className="text-rose-600">90% (위험 기준선)</span>
@@ -316,28 +316,28 @@ export const ReportPage: React.FC = () => {
           {/* 권리 금액 세부 내역 그리드 */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
             <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
-              <span className="text-[11px] text-gray-500 block mb-1">추정 시세</span>
+              <span className="text-sm text-gray-600 block mb-1">추정 시세</span>
               <span className="text-sm sm:text-base font-bold text-gray-900">
                 {report.price_manwon ? `${report.price_manwon.toLocaleString()}만원` : '시세 없음'}
               </span>
             </div>
 
             <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
-              <span className="text-[11px] text-gray-500 block mb-1">선순위 채권액(근저당)</span>
+              <span className="text-sm text-gray-600 block mb-1">선순위 채권액(근저당)</span>
               <span className="text-sm sm:text-base font-bold text-gray-900">
                 {(report.senior_debt_manwon || 0).toLocaleString()}만원
               </span>
             </div>
 
             <div className="bg-blue-50/60 rounded-xl p-3.5 border border-blue-100">
-              <span className="text-[11px] text-blue-700 block mb-1">내 보증금</span>
+              <span className="text-xs text-blue-700 block mb-1">내 보증금</span>
               <span className="text-sm sm:text-base font-extrabold text-blue-900">
                 {(report.deposit_manwon || review?.subject.deposit_manwon || 0).toLocaleString()}만원
               </span>
             </div>
 
             <div className="bg-emerald-50/60 rounded-xl p-3.5 border border-emerald-100">
-              <span className="text-[11px] text-emerald-700 block mb-1">최우선변제 보호한도</span>
+              <span className="text-xs text-emerald-700 block mb-1">최우선변제 보호한도</span>
               <span className="text-sm sm:text-base font-bold text-emerald-900">
                 {(report.priority_repayment_manwon || 0).toLocaleString()}만원
               </span>
@@ -348,7 +348,7 @@ export const ReportPage: React.FC = () => {
         {/* 3. 위험 신호(Risk Signals) */}
         {report.signals && report.signals.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <span>🚨</span>
               <span>확인된 위험 신호 ({report.signals.length}건)</span>
             </h2>
@@ -368,21 +368,21 @@ export const ReportPage: React.FC = () => {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                             isDanger ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'
                           }`}
                         >
                           {isDanger ? '위험' : '주의'}
                         </span>
-                        <span className="text-xs font-bold">{sig.label}</span>
+                        <span className="text-sm font-bold">{sig.label}</span>
                       </div>
                       {sig.description && (
-                        <p className="text-xs text-gray-700 leading-relaxed">{sig.description}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{sig.description}</p>
                       )}
                     </div>
 
                     {sig.source && (
-                      <span className="text-[10px] text-gray-500 bg-white/80 border border-gray-200 rounded px-2 py-1 flex-shrink-0 self-start sm:self-center">
+                      <span className="text-[11px] text-gray-600 bg-white/80 border border-gray-200 rounded px-2 py-1 flex-shrink-0 self-start sm:self-center">
                         근거: {sig.source}
                       </span>
                     )}
@@ -397,7 +397,7 @@ export const ReportPage: React.FC = () => {
         {report.clauses && report.clauses.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
                 <span>📝</span>
                 <span>계약서 필수 추천 특약사항</span>
               </h2>
@@ -412,13 +412,13 @@ export const ReportPage: React.FC = () => {
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-gray-900">{clause.title}</span>
+                      <span className="text-sm font-bold text-gray-900">{clause.title}</span>
                     </div>
-                    <p className="text-xs text-gray-800 bg-white border border-gray-200 rounded-lg p-3 font-mono leading-relaxed select-all">
+                    <p className="text-sm text-gray-800 bg-white border border-gray-200 rounded-lg p-3 font-mono leading-relaxed select-all">
                       "{clause.body || clause.text}"
                     </p>
                     {(clause.reason || clause.source) && (
-                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                      <p className="text-sm text-gray-600 leading-relaxed">
                         💡 <strong>추천 이유:</strong> {clause.reason || clause.source}
                       </p>
                     )}
@@ -426,7 +426,7 @@ export const ReportPage: React.FC = () => {
 
                   <button
                     onClick={() => handleCopyClause(clause.body || clause.text || '', clause.title)}
-                    className="w-full bg-white hover:bg-blue-50 text-blue-600 hover:text-blue-700 text-xs font-bold py-2 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1"
+                    className="w-full bg-white hover:bg-blue-50 text-blue-600 hover:text-blue-700 text-sm font-bold py-2 rounded-lg border border-blue-200 transition flex items-center justify-center gap-1"
                   >
                     <span>📋</span>
                     <span>특약 문구 복사</span>
@@ -440,7 +440,7 @@ export const ReportPage: React.FC = () => {
         {/* 5. 단계별 안전 체크리스트 */}
         {report.todos && report.todos.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
               <span>✅</span>
               <span>단계별 보증금 보호 체크리스트</span>
             </h2>
@@ -461,7 +461,7 @@ export const ReportPage: React.FC = () => {
                     onClick={() => toggleTodo(todoKey)}
                     className={`rounded-xl p-4 border transition cursor-pointer flex items-start gap-3.5 ${
                       isChecked
-                        ? 'bg-gray-50 border-gray-200 text-gray-400 line-through'
+                        ? 'bg-gray-50 border-gray-200 text-gray-500 line-through'
                         : 'bg-white border-gray-200 hover:border-blue-300 text-gray-900 shadow-sm'
                     }`}
                   >
@@ -473,12 +473,12 @@ export const ReportPage: React.FC = () => {
                     />
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
+                        <span className="text-[11px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
                           {phaseLabel}
                         </span>
-                        <span className="text-xs font-bold">{todo.title}</span>
+                        <span className="text-sm font-bold">{todo.title}</span>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">{todo.text}</p>
+                      <p className="text-sm text-gray-600 leading-relaxed">{todo.text}</p>
                     </div>
                   </div>
                 );
@@ -488,7 +488,7 @@ export const ReportPage: React.FC = () => {
         )}
 
         {/* 하단 법적 고지 및 공유 바 */}
-        <div className="bg-slate-100 rounded-2xl p-5 text-center text-xs text-slate-500 space-y-2">
+        <div className="bg-slate-100 rounded-2xl p-5 text-center text-xs text-slate-600 space-y-2">
           <p>보증금지킴의 권리분석 의견서는 국토교통부·LH·HUG 기준을 기반으로 산출된 참고용 데이터입니다.</p>
           <div className="flex justify-center gap-4 pt-2">
             <Link to={`/review/${report.review_id}`} className="text-blue-600 hover:underline font-semibold">
@@ -510,13 +510,13 @@ export const ReportPage: React.FC = () => {
               <h3 className="text-base font-bold text-gray-900">시세 및 권리금액 직접 수정</h3>
               <button
                 onClick={() => setIsOverrideOpen(false)}
-                className="text-gray-400 hover:text-gray-600 text-lg"
+                className="text-gray-500 hover:text-gray-600 text-lg"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed">
               공인중개사나 인근 실거래가를 통해 확인한 정확한 시세가 있다면 직접 입력해 재판정할 수 있습니다.
             </p>
 
@@ -536,14 +536,14 @@ export const ReportPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsOverrideOpen(false)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold py-2.5 rounded-xl transition"
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold py-2.5 rounded-xl transition"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={isOverriding}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-xs font-bold py-2.5 rounded-xl transition shadow"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-bold py-2.5 rounded-xl transition shadow"
                 >
                   {isOverriding ? '재판정 중...' : '재판정하기'}
                 </button>
@@ -561,13 +561,13 @@ export const ReportPage: React.FC = () => {
               <h3 className="text-base font-bold text-gray-900">🔗 의견서 공유 링크</h3>
               <button
                 onClick={() => setShareUrl(null)}
-                className="text-gray-400 hover:text-gray-600 text-lg"
+                className="text-gray-500 hover:text-gray-600 text-lg"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-gray-600 leading-relaxed">
+            <p className="text-sm text-gray-600 leading-relaxed">
               임대인 이름과 상세 주소가 안전하게 마스킹된 읽기 전용 진단서 링크입니다. 가족이나 부동산 중개사에게 전달해 보세요.
             </p>
 
@@ -579,13 +579,13 @@ export const ReportPage: React.FC = () => {
                   setCopySuccess('링크가 복사되었습니다!');
                   setTimeout(() => setCopySuccess(null), 3000);
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg flex-shrink-0 transition"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-3 py-1.5 rounded-lg flex-shrink-0 transition"
               >
                 복사
               </button>
             </div>
 
-            <p className="text-[11px] text-gray-400 text-center">
+            <p className="text-xs text-gray-500 text-center">
               ⏳ 발급일로부터 7일간 열람할 수 있습니다.
             </p>
           </div>
