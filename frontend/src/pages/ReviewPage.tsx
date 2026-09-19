@@ -597,9 +597,9 @@ export const ReviewPage: React.FC = () => {
                   )}
 
                   {/* 선택지 버튼들 */}
-                  {pendingQuestion.options && pendingQuestion.options.length > 0 ? (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {pendingQuestion.options.map((opt, oIdx) => (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {pendingQuestion.options && pendingQuestion.options.length > 0 ? (
+                      pendingQuestion.options.map((opt, oIdx) => (
                         <button
                           key={oIdx}
                           disabled={isSubmitting}
@@ -608,9 +608,18 @@ export const ReviewPage: React.FC = () => {
                         >
                           {opt}
                         </button>
-                      ))}
-                    </div>
-                  ) : null}
+                      ))
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={() => handleAnswerChoice('모름')}
+                        className="bg-white hover:bg-gray-100 text-gray-700 font-semibold text-xs px-3.5 py-2 rounded-xl border border-gray-300 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                      >
+                        모름 · 확인 불가 (건너뛰기)
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
