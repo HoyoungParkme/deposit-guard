@@ -662,9 +662,8 @@ async def dispatch(
                         await crud.update_review_facts(session, r_id, facts.to_dict())
 
         elif name == "get_criteria":
-            limits_obj = asdict(LIMITS)
             data = svc.rules_service.criteria(
-                limits_obj, args_dict["topic"], args_dict.get("signal_code")
+                LIMITS, args_dict["topic"], args_dict.get("signal_code")
             )
 
         elif name == "write_report":

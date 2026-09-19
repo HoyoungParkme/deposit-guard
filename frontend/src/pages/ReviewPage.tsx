@@ -515,7 +515,11 @@ export const ReviewPage: React.FC = () => {
                             {msg.data.debt_ratio !== undefined && (
                               <div className="flex justify-between items-center pt-1 border-t border-slate-100">
                                 <span className="text-slate-600">부채비율 (깡통전세 위험도):</span>
-                                <span className="font-bold text-blue-600 text-xs">{msg.data.debt_ratio}%</span>
+                                <span className="font-bold text-blue-600 text-xs">
+                                  {msg.data.debt_ratio <= 1.5
+                                    ? `${(msg.data.debt_ratio * 100).toFixed(1).replace(/\.0$/, '')}%`
+                                    : `${msg.data.debt_ratio}%`}
+                                </span>
                               </div>
                             )}
                           </div>
@@ -545,14 +549,33 @@ export const ReviewPage: React.FC = () => {
               {/* 활성 대기 질문 (Interactive Question) */}
               {pendingQuestion && (
                 <div className="bg-gradient-to-br from-amber-50 to-orange-50/50 border border-amber-200/90 rounded-2xl p-4 shadow-sm space-y-3 animate-fadeIn">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">❓</span>
-                    <p className="font-bold text-xs text-amber-950">{pendingQuestion.text}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">❓</span>
+                      <p className="font-bold text-sm text-amber-950">{pendingQuestion.text}</p>
+                    </div>
+                    <span className="text-[11px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                      질문 {pendingQuestion.asked_no || 1} / 최대 5
+                    </span>
                   </div>
                   {pendingQuestion.why && (
                     <p className="text-xs text-amber-900/80 leading-relaxed bg-white/70 border border-amber-200/60 rounded-xl p-2.5">
                       💡 <strong>확인 이유:</strong> {pendingQuestion.why}
                     </p>
+                  )}
+
+                  {pendingQuestion.help_url && (
+                    <div className="pt-0.5">
+                      <a
+                        href={pendingQuestion.help_url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-1 text-xs text-blue-700 hover:text-blue-900 underline font-medium"
+                      >
+                        <span>🔗</span>
+                        <span>공식 확인 방법 안내 바로가기 (정부24) →</span>
+                      </a>
+                    </div>
                   )}
 
                   {/* 선택지 버튼들 */}
@@ -578,7 +601,28 @@ export const ReviewPage: React.FC = () => {
           </div>
 
           {/* 하단 입력 영역 (되묻기 / 질문 응답) */}
-          <div className="p-3 sm:p-4 bg-white border-t border-gray-200">
+          <div className="p-3 sm:p-4 bg-white border-t border-gray-200" data-el="6">
+            {/* 추천 질문 칩 (JSD-UI-001 data-el="6") */}
+            {!pendingQuestion && (
+              <div className="max-w-2xl mx-auto mb-2.5 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-gray-500 font-medium mr-1">추천 질문:</span>
+                {[
+                  '근저당이 왜 위험한가요?',
+                  '전세보증보험 가입 안 되면 어떡하죠?',
+                  '계약서에 넣을 필수 특약은 무엇인가요?',
+                ].map((qText, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setCustomInputText(qText)}
+                    className="text-xs bg-slate-100 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-700 px-2.5 py-1 rounded-full border border-slate-200 transition cursor-pointer"
+                  >
+                    💬 {qText}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <form onSubmit={handleSendText} className="max-w-2xl mx-auto flex gap-2">
               <input
                 type="text"
@@ -600,6 +644,9 @@ export const ReviewPage: React.FC = () => {
                 {isSubmitting ? '전송 중...' : '보내기'}
               </button>
             </form>
+            <p className="max-w-2xl mx-auto mt-2 text-center text-[11px] text-gray-400">
+              안내: 등기부 권리분석 및 전세 계약 주의사항에 대한 질문에 답변해 드립니다. (법률 대리·소송 상담 제외)
+            </p>
           </div>
         </div>
 

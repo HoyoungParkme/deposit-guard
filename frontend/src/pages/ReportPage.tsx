@@ -185,7 +185,8 @@ export const ReportPage: React.FC = () => {
     label: '판정 중',
   };
 
-  const debtRatioVal = report.debt_ratio || 0;
+  const rawRatio = report.debt_ratio || 0;
+  const debtRatioVal = rawRatio <= 1.5 && rawRatio > 0 ? Math.round(rawRatio * 100) : Math.round(rawRatio);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

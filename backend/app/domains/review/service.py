@@ -702,11 +702,40 @@ class ReviewService:
                     # 답변 값 정제
                     answer_val: str
                     if q.kind in ("illegal_building", "proxy", "owner_type"):
-                        choice = user_input.choice or ""
+                        choice = (user_input.choice or "").strip()
+                        raw_text = (user_input.text or "").strip()
                         choice_map = CHOICE_VALUE_MAP.get(q.kind, {})
-                        if choice not in choice_map:
-                            raise AppError("missing_input", field="choice")
-                        answer_val = choice_map[choice]
+                        if choice in choice_map:
+                            answer_val = choice_map[choice]
+                        elif raw_text in choice_map:
+                            answer_val = choice_map[raw_text]
+                        else:
+                            # 텍스트 내 유연한 키워드 추론
+                            if q.kind == "illegal_building":
+                                if any(w in raw_text for w in ("아님", "아니", "없음", "없", "정상")):
+                                    answer_val = "no"
+                                elif any(w in raw_text for w in ("위반", "표기 있음", "맞음")):
+                                    answer_val = "yes"
+                                else:
+                                    answer_val = "unknown"
+                            elif q.kind == "proxy":
+                                if any(w in raw_text for w in ("본인", "소유자", "집주인")):
+                                    answer_val = "self"
+                                elif any(w in raw_text for w in ("위임장 있음", "인감")):
+                                    answer_val = "proxy_with_poa"
+                                elif any(w in raw_text for w in ("위임장 없음", "위임장없음", "대리인")):
+                                    answer_val = "proxy_without_poa"
+                                else:
+                                    answer_val = "unknown"
+                            elif q.kind == "owner_type":
+                                if any(w in raw_text for w in ("법인", "회사", "공공")):
+                                    answer_val = "corporation"
+                                elif "개인" in raw_text:
+                                    answer_val = "individual"
+                                else:
+                                    answer_val = "unknown"
+                            else:
+                                answer_val = "unknown"
                     else:
                         if user_input.file is not None and not user_input.choice and not user_input.text:
                             answer_val = "file"

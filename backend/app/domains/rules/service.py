@@ -770,11 +770,11 @@ class RulesService:
         근거: JSD-API-001#GET/api/criteria, JSD-API-002#get_criteria, JSD-UI-001#UI-4
         """
         public_limits = {
-            "tool_calls": limits.tool_calls,
-            "questions": limits.questions,
-            "file_mb": limits.file_mb,
-            "pages": limits.pages,
-            "retention_hours": limits.retention_hours,
+            "tool_calls": getattr(limits, "tool_calls", None) if not isinstance(limits, dict) else limits.get("tool_calls"),
+            "questions": getattr(limits, "questions", None) if not isinstance(limits, dict) else limits.get("questions"),
+            "file_mb": getattr(limits, "file_mb", None) if not isinstance(limits, dict) else limits.get("file_mb"),
+            "pages": getattr(limits, "pages", None) if not isinstance(limits, dict) else limits.get("pages"),
+            "retention_hours": getattr(limits, "retention_hours", None) if not isinstance(limits, dict) else limits.get("retention_hours"),
         }
 
         signals_list = [
